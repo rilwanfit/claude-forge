@@ -10,7 +10,7 @@ try {
   for await (const c of process.stdin) raw += c;
   const e = JSON.parse(raw);
   if (!e.session_id || !e.hook_event_name) process.exit(0);
-  const file = process.env.DASH_EVENTS || path.join(os.homedir(), ".project-dashboard", "events.jsonl");
+  const file = process.env.DASH_EVENTS || path.join(os.homedir(), ".nudge", "events.jsonl");
   mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
   const line = {
     t: Date.now(), dir: process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), ".claude"), id: e.session_id, ev: e.hook_event_name, cwd: e.cwd,

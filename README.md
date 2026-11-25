@@ -1,4 +1,4 @@
-# Project dashboard
+# Nudge
 
 **An inbox for your Claude Code work.** One page that shows, per project, what needs *you* right now (a question a session asked, a permission waiting for approval, a run to review, a pull request) and what got done while you were away. It reads your own transcripts and git on your machine. No account, no cloud, no build step, no dependencies.
 
@@ -57,7 +57,7 @@ Other Claude Code dashboards mostly show what Claude is doing *right now*: token
 Requires Node 22+ and the `claude` CLI. Optional: `gh` (logged in) for GitHub items.
 
 ```sh
-git clone https://github.com/rilwanfit/project-dashboard && cd project-dashboard
+git clone https://github.com/rilwanfit/nudge && cd nudge
 node server.mjs      # then open http://127.0.0.1:4777
 ```
 
@@ -97,7 +97,7 @@ To start it with your login and keep it running:
 ./install-service.sh
 ```
 
-Stop it with `systemctl --user disable --now project-dashboard`.
+Stop it with `systemctl --user disable --now nudge`.
 
 ## Reaching it from other devices
 
@@ -130,7 +130,7 @@ node hooks/install.mjs              # shows exactly what it will add to each pro
 node hooks/install.mjs --uninstall  # removes only its own entries
 ```
 
-The hook (`hooks/dashboard-hook.mjs`) appends one short line per event (`SessionStart`, `UserPromptSubmit`, `Notification`, `Stop`, `SessionEnd`) to `~/.project-dashboard/events.jsonl`: session id, event name, folder and the text of a permission request. It uses no network, never prints, and always exits 0, so it cannot block a session. Your other settings and hooks are left as they are, and a backup `settings.json.dashboard-backup` is written first. Sessions already running need a restart to pick the hook up.
+The hook (`hooks/dashboard-hook.mjs`) appends one short line per event (`SessionStart`, `UserPromptSubmit`, `Notification`, `Stop`, `SessionEnd`) to `~/.nudge/events.jsonl`: session id, event name, folder and the text of a permission request. It uses no network, never prints, and always exits 0, so it cannot block a session. Your other settings and hooks are left as they are, and a backup `settings.json.dashboard-backup` is written first. Sessions already running need a restart to pick the hook up.
 
 ## Usage page
 

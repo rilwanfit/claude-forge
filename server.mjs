@@ -1,4 +1,4 @@
-// Project dashboard: what is done and what needs you, across Claude profiles, git and GitHub.
+// Nudge: what is done and what needs you, across Claude profiles, git and GitHub.
 // Local only (127.0.0.1) unless "host" is set, which then requires an access token. No dependencies: Node 22 or later.
 import http from "node:http";
 import os from "node:os";
@@ -237,7 +237,7 @@ async function inputFileItems(spec) {
 const sessionIndex = new Map(); // session id -> where to resume it; the browser never sends a path or command
 let githubCache = { at: 0, byRepo: {} };
 let snapshot = { generatedAt: null, projects: [], sources: [] };
-const EVENTS_FILE = process.env.DASH_EVENTS || path.join(HOME, ".project-dashboard", "events.jsonl");
+const EVENTS_FILE = process.env.DASH_EVENTS || path.join(HOME, ".nudge", "events.jsonl");
 const eventLog = new EventLog(EVENTS_FILE);
 const hookKey = (profileDir, id) => `${path.resolve(expand(profileDir))}:${id}`;
 let building = null;
@@ -851,7 +851,7 @@ await engine.init();
 await ensureAssistant();
 refreshIndex().catch((e) => console.error("index:", e)); // in the background: pages show what is indexed so far
 setInterval(() => refreshIndex().catch((e) => console.error("index:", e)), config.refreshSeconds * 1000);
-server.listen(config.port, HOST, () => console.log(`project dashboard on http://${HOST}:${config.port}${EXPOSED ? " (network-visible, token required)" : ""}`));
+server.listen(config.port, HOST, () => console.log(`nudge on http://${HOST}:${config.port}${EXPOSED ? " (network-visible, token required)" : ""}`));
 await rebuild({ forceGithub: true });
 setInterval(() => rebuild(), config.refreshSeconds * 1000);
 // Notifications: watch the same "needs you" list the page shows. Off with "notify": false; the first pass only learns what is already there.

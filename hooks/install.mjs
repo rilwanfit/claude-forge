@@ -33,7 +33,7 @@ for (const dir of dirs) {
 const todo = plan.filter((p) => p.changed);
 if (!todo.length) { console.log(uninstall ? "Nothing to remove." : "Already installed in every profile."); process.exit(0); }
 
-console.log(uninstall ? "This removes the dashboard hook from:" : `This adds a hook that records ${HOOK_EVENTS.join(", ")} events to ~/.project-dashboard/events.jsonl.`);
+console.log(uninstall ? "This removes the dashboard hook from:" : `This adds a hook that records ${HOOK_EVENTS.join(", ")} events to ~/.nudge/events.jsonl.`);
 console.log("It writes only: session id, event name, folder, and the text of a permission request. No network. Your other settings and hooks are untouched.\n");
 for (const p of todo) console.log(`  ${p.file}`);
 if (!uninstall) console.log(`\nEach file gets, per event:  { "hooks": [{ "type": "command", "command": ${JSON.stringify(command)}, "timeout": 5 }] }`);
