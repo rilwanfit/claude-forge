@@ -27,12 +27,12 @@ test("phone alerts: off until set up, then a private topic, a generic test messa
   const off = await (await fetch(base + "/api/notify")).json();
   assert.equal(off.phone.on, false); assert.equal(off.disabled, false);
   const on = (await post("/api/notify/phone", { action: "enable" })).json;
-  assert.equal(on.phone.on, true); assert.match(on.phone.topic, /^nudge-[\w-]{20}$/);
+  assert.equal(on.phone.on, true); assert.match(on.phone.topic, /^forge-[\w-]{20}$/);
   assert.equal((await post("/api/notify/phone", { action: "enable" })).json.phone.topic, on.phone.topic, "enabling twice keeps the same topic");
   await post("/api/notify/phone", { action: "test" });
   await until(() => got.length);
   assert.equal(got[0].url, "/" + on.phone.topic); assert.equal(got[0].title, "Test notification"); assert.equal(got[0].body, "Notifications work.");
-  assert.match(await readFile(path.join(tmp, "state.json"), "utf8"), /nudge-/, "the topic lives in state.json");
+  assert.match(await readFile(path.join(tmp, "state.json"), "utf8"), /forge-/, "the topic lives in state.json");
   assert.equal((await post("/api/notify/phone", { action: "disable" })).json.phone.on, false);
   assert.equal((await post("/api/notify/phone", { action: "bogus" })).status, 400);
 });

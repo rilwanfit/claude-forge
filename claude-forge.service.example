@@ -1,5 +1,5 @@
 [Unit]
-Description=Nudge (local, 127.0.0.1:4777)
+Description=Claude Forge (local, 127.0.0.1:4777)
 
 [Service]
 # Runs are detached from this service so they outlive a restart of it.

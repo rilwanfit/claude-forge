@@ -28,7 +28,7 @@ test("remote channels get generic text by default and the real text only when as
   const m = { title: "Needs approval · secret-project", body: "Fix login: rm -rf ?", generic: { title: "Claude needs you", body: "Needs approval" } };
   const sh = []; const run = (cmd, args) => sh.push([cmd, ...args]);
   await makeDeliver({ webhook: "https://hook.example/x", ntfy: { topic: "my topic" } }, { post, run, platform: "linux" })(m);
-  assert.deepEqual(sh[0].slice(0, 2), ["notify-send", "--app-name=Nudge"]); assert.ok(sh[0].includes(m.body), "desktop shows the real text: it stays on this machine");
+  assert.deepEqual(sh[0].slice(0, 2), ["notify-send", "--app-name=Claude Forge"]); assert.ok(sh[0].includes(m.body), "desktop shows the real text: it stays on this machine");
   assert.ok(!JSON.stringify(calls).includes("secret-project") && !JSON.stringify(calls).includes("rm -rf"), "nothing private leaves the machine by default");
   assert.equal(calls[1].url, "https://ntfy.sh/my%20topic");
   calls.length = 0; await makeDeliver({ webhook: "https://hook.example/x", includeText: true, desktop: false }, { post, run, platform: "linux" })(m);
