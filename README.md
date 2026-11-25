@@ -5,8 +5,8 @@
 **An inbox for your Claude Code work.** One page that shows, per project, what needs *you* right now (a question a session asked, a permission waiting for approval, a run to review, a pull request) and what got done while you were away. It reads your own transcripts and git on your machine. No account, no cloud, no build step, no dependencies.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/needs.png">
-  <img src="docs/screenshots/needs-light.png" alt="What needs you: questions, reviews, failed runs and missing connections, each with one button">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/board.png">
+  <img src="docs/screenshots/board-light.png" alt="One card per project: what needs you, what is running and recent results, each row with a single action">
 </picture>
 
 Other Claude Code dashboards mostly show what Claude is doing *right now*: tokens, cost, context. This one answers a different question: **what is waiting on me?**

@@ -73,7 +73,7 @@ function renderTop() {
   $("#title").textContent = p ? p.name : "All projects";
   const needs = D.needs.filter(inProj).length, run = D.running.filter(inProj).length;
   const next = D.upcoming.filter(inProj)[0];
-  $("#sub").textContent = [needs ? `${needs} need${needs === 1 ? "s" : ""} you` : "Nothing needs you", run ? `${run} running` : "", next ? `next: ${next.name}, ${until(next.at)}` : ""].filter(Boolean).join(" · ");
+  $("#sub").textContent = [needs ? (needs === 1 ? "1 item needs you" : `${needs} need you`) : "Nothing needs you", run ? `${run} running` : "", next ? `next: ${next.name}, ${until(next.at)}` : ""].filter(Boolean).join(" · ");
 }
 
 function renderStrip() {
@@ -89,7 +89,7 @@ function renderStrip() {
   for (let i = 0; i < 7; i++) {
     const d0 = start.getTime() + i * DAY; const d = new Date(d0);
     const items = ups.filter((u) => { const x = new Date(u.at); x.setHours(0, 0, 0, 0); return x.getTime() === new Date(d0).setHours(0, 0, 0, 0); });
-    cols.push(`<div class="day${i === 0 ? " today" : ""}${items.length ? "" : " empty"}"><h3>${i === 0 ? "Today" : i === 1 ? "Tomorrow" : WD[d.getDay()]} <span class="nothing">${d.getDate()}</span></h3>${items.slice(0, 2).map((u) => `<button class="slot" data-act="wf" data-id="${u.workflowId}" data-focus="schedule" title="${esc(u.name)} · ${esc(proj(u.projectKey).name)}">${mark(u.projectKey, "sm")}<b>${hm(u.at)}</b><span>${esc(u.name)}</span></button>`).join("")}${items.length > 2 ? `<button class="slot more" data-act="scheduler" title="${esc(items.slice(2).map((u) => `${hm(u.at)} ${u.name}`).join(", "))}">+${items.length - 2} more</button>` : ""}</div>`);
+    cols.push(`<div class="day${i === 0 ? " today" : ""}${items.length ? "" : " empty"}"><h3>${i === 0 ? "Today" : i === 1 ? "Tomorrow" : WD[d.getDay()]} <span class="nothing">${d.getDate()}</span></h3>${items.slice(0, 2).map((u) => `<button class="slot" data-act="wf" data-id="${u.workflowId}" data-focus="schedule" title="${esc(u.name)} · ${esc(proj(u.projectKey).name)}">${mark(u.projectKey, "sm")}<b>${hm(u.at)}</b><span>${esc(u.name)}</span></button>`).join("")}${items.length > 2 ? `<button class="slot slot-more" data-act="scheduler" title="${esc(items.slice(2).map((u) => `${hm(u.at)} ${u.name}`).join(", "))}">+${items.length - 2} more</button>` : ""}</div>`);
   }
   $("#strip").innerHTML = `<div class="strip-head"><h2>Up next</h2><div class="health">${health}</div></div>` + (ups.length ? `<div class="days">${cols.join("")}</div>` : `<p class="nothing">${nextAny ? `Nothing in the next 7 days. Next: ${esc(nextAny.name)}, ${new Date(nextAny.next).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} ${hm(nextAny.next)}` : "No scheduled runs. Open a workflow to add a schedule."}</p>`);
 }
@@ -122,23 +122,43 @@ function row(it, inNeeds) {
     ${it.line ? `<p class="rline">${esc(clip(it.line, 240))}</p>` : ""}${inNeeds && it.kind === "session" && it.options?.length ? `<div class="opts" role="group" aria-label="Suggested answers">${it.options.slice(0, 4).map((o, i) => `<button type="button" class="opt" data-act="pick-open" data-id="${esc(it.id)}" data-i="${i}">${esc(o.label)}</button>`).join("")}</div>` : ""}</div><div class="acts">${actsFor(it, inNeeds)}</div></article>`;
 }
 
+// ---------------------------------------------------------------- board (Recap style: one card per project, compact rows)
+const stateOf = (it) => (it.kind === "run" ? it.status : it.label === "Running" || it.status === "running" ? "live" : it.kind === "session" && (it.label === "Asked you" || it.label === "Needs approval") ? "needs_input" : it.kind === "session" ? "answered" : "needs_review");
+function srow(it, inNeeds) {
+  const isReport = it.kind === "run" && it.primary?.act === "href";
+  const title = isReport ? `<a class="tt" href="${esc(it.primary.href)}" target="_blank" rel="noopener noreferrer">${esc(it.title)}</a>` : `<button class="tt" data-act="open" data-id="${esc(it.id)}">${esc(it.title)}</button>`;
+  const when = it.status === "running" || it.status === "queued" ? `since ${ago(it.ts)}`.replace("since just now", "just started") : ago(it.ts);
+  const all = actsFor(it, inNeeds).match(/<(?:button|a)\b[^>]*>.*?<\/(?:button|a)>/g) || []; // compact rows: a finished item keeps only its main action; the rest is in its panel
+  const acts = (inNeeds ? all.slice(0, 2) : all.slice(0, 1)).join("").replace(/class="btn( primary| ghost)?"/g, (m, k) => `class="btn sm${k || ""}"`);
+  const opts = inNeeds && it.kind === "session" && it.options?.length ? `<div class="opts" role="group" aria-label="Suggested answers">${it.options.slice(0, 4).map((o, i) => `<button type="button" class="opt" data-act="pick-open" data-id="${esc(it.id)}" data-i="${i}">${esc(o.label)}</button>`).join("")}</div>` : "";
+  return `<article class="srow s-${stateOf(it)}"><span class="dot" aria-hidden="true"></span><div class="t">${title}${chip(it)}${prof(it.profile)}</div><div class="go">${it.ts ? `<time class="when" title="${esc(full(it.ts))}">${when}</time>` : ""}${acts}</div>${it.line ? `<p class="lo">${esc(clip(it.line, 240))}</p>` : ""}${opts}</article>`;
+}
+
+function pcard(key, p, { needs, running, results }, limit) {
+  const next = D.workflows.filter((w) => w.projectKey === key && w.next && w.schedule.enabled && !w.paused).sort((a, b) => a.next - b.next)[0];
+  const rows = (list, inNeeds, n) => list.slice(0, n).map((i) => srow(i, inNeeds)).join("");
+  let left = limit;
+  const nRows = Math.min(needs.length, left); left -= nRows;
+  const rRows = Math.min(running.length, Math.max(left, 0)); left -= rRows;
+  const dRows = Math.min(results.length, Math.max(left, 0));
+  const hidden = needs.length + running.length + results.length - nRows - rRows - dRows;
+  return `<section class="pc${sel === key ? " sel" : ""}" aria-label="${esc(p.name)}"><header class="pc-head">${mark(key, "sm")}<button class="pc-name" data-act="project" data-id="${esc(key)}" title="${esc(p.name)}">${esc(p.name)}</button>
+    <span class="pc-meta">${needs.length ? `<span class="u">${needs.length === 1 ? "1 needs you" : `${needs.length} need you`}</span>` : ""}${running.length ? `<span class="l">${running.length} running</span>` : ""}${!needs.length && !running.length ? `<span>${results.length} recent</span>` : ""}</span></header>
+    ${next ? `<div class="pc-up">${sym("i-clock")}<span>Scheduled: <b>${esc(next.name)}</b> ${esc(until(next.next))}</span></div>` : ""}
+    ${nRows ? `<div class="per">Needs you</div>${rows(needs, true, nRows)}` : ""}${rRows ? `<div class="per">Running</div>${rows(running, false, rRows)}` : ""}${dRows ? `<div class="per">Recent</div>${rows(results, false, dRows)}` : ""}
+    ${hidden > 0 && sel === "all" ? `<button class="more" data-act="project" data-id="${esc(key)}">Show ${hidden} more</button>` : ""}</section>`;
+}
+
 function renderRuns() {
-  let needs = D.needs.filter(inProj);
-  let more = "";
-  if (sel === "all") { // a busy project never hides another project's request
-    const seen = {}, hidden = {};
-    needs = needs.filter((i) => { seen[i.projectKey] = (seen[i.projectKey] || 0) + 1; if (seen[i.projectKey] > 3) { hidden[i.projectKey] = (hidden[i.projectKey] || 0) + 1; return false; } return true; });
-    more = Object.entries(hidden).map(([k, n]) => `<button class="more" data-act="project" data-id="${esc(k)}">+${n} more in ${esc(proj(k).name)}</button>`).join("");
-  }
-  const running = D.running.filter(inProj), results = D.results.filter(inProj).slice(0, sel === "all" ? 14 : 30);
+  const bucket = (list) => { const m = {}; for (const i of list.filter(inProj)) (m[i.projectKey] ||= []).push(i); return m; };
+  const N = bucket(D.needs), R = bucket(D.running), H = bucket(D.results);
   const g = proj(sel).git;
   const git = sel !== "all" && g && (g.loose.length || g.recent.length) ? `<details class="git"><summary>Git activity</summary><ul>${g.loose.map((l) => `<li>${esc(l)}</li>`).join("")}${g.recent.map((c) => `<li>${esc(c.title)} <span class="nothing">${ago(c.ts)}</span></li>`).join("")}</ul></details>` : "";
   const older = D.older.filter(inProj);
   const olderHtml = older.length ? `<details class="git"><summary>Older questions from sessions (${older.length})</summary><div class="rows" style="margin-top:8px">${older.slice(0, 20).map((i) => row(i, false)).join("")}</div></details>` : "";
-  $("#runs").innerHTML =
-    (needs.length ? `<section class="group needs"><h2>Needs me <span class="n">${D.needs.filter(inProj).length}</span></h2><div class="rows">${needs.map((i) => row(i, true)).join("")}</div>${more}</section>` : "") +
-    (running.length ? `<section class="group"><h2>Running <span class="n">${running.length}</span></h2><div class="rows">${running.map((i) => row(i, false)).join("")}</div></section>` : "") +
-    `<section class="group"><h2>Recent results</h2><div class="rows">${results.length ? results.map((i) => row(i, false)).join("") : `<p class="empty">No results yet. Run a workflow and its report appears here.</p>`}</div>${git}${olderHtml}</section>`;
+  const keys = D.projects.map((p) => p.key).filter((k) => (sel === "all" || k === sel) && (N[k]?.length || R[k]?.length || H[k]?.length));
+  const cards = keys.map((k) => pcard(k, proj(k), { needs: N[k] || [], running: R[k] || [], results: H[k] || [] }, sel === "all" ? 4 : 40));
+  $("#runs").innerHTML = (cards.length ? `<div class="rc-grid${sel === "all" ? "" : " single"}">${cards.join("")}</div>` : `<p class="empty">Nothing yet. Run a workflow or start a Claude session and it appears here.</p>`) + git + olderHtml;
 }
 
 function renderLib() {
