@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#151513" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<title>Recap · Project dashboard</title>
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/recap.css">
+</head>
+<body class="recap">
+<div class="rc-wrap">
+  <header class="rc-top">
+    <div class="rc-title">
+      <nav class="rc-nav" aria-label="Pages"><a href="/recap" aria-current="page">Recap</a><a href="/usage">Usage</a><a href="/">Runs &amp; workflows</a></nav>
+      <h1 id="title">Where you left off</h1>
+      <p id="sub" class="sub" aria-live="polite"></p>
+    </div>
+    <div class="rc-actions">
+      <form id="search-form" class="rc-search" role="search">
+        <label class="sr" for="q">Search sessions by problem, decision, workflow or output</label>
+        <input id="q" type="search" placeholder="Search problems, decisions, workflows, outputs…" autocomplete="off">
+        <div class="seg" role="group" aria-label="Search scope">
+          <button type="button" id="scope-project" aria-pressed="true">This project</button>
+          <button type="button" id="scope-all" aria-pressed="false">All projects</button>
+        </div>
+      </form>
+      <button class="btn" id="refresh" title="Read new transcript lines now">Refresh</button>
+    </div>
+  </header>
+  <section id="strip" class="rc-strip" aria-label="Summary"></section>
+  <main id="main" tabindex="-1"></main>
+</div>
+<div id="scrim" class="scrim" hidden></div>
+<aside id="panel" class="panel rc-panel" role="dialog" aria-modal="true" aria-labelledby="panel-title" tabindex="-1" hidden></aside>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="/recap.js" type="module"></script>
+</body>
+</html>

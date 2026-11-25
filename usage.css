@@ -1,0 +1,33 @@
+.usage { background: var(--bg); color: var(--ink); }
+.us-wrap { max-width: 1040px; margin: 0 auto; padding: 20px 16px 48px; display: grid; gap: 16px; }
+.us-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.us-top h1 { margin: 2px 0 0; font-size: 22px; }
+.us-nav { display: flex; gap: 14px; font-size: 13px; margin-bottom: 4px; }
+.us-nav a { color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; }
+.us-nav a[aria-current="page"] { color: var(--ink); font-weight: 600; border-color: var(--accent); }
+.us-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.us-controls select { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 6px 10px; min-height: 32px; }
+.us-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.us-tile, .us-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+.us-tile b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+.us-tile span { color: var(--muted); font-size: 12px; }
+.us-card h2 { margin: 0 0 10px; font-size: 14px; }
+.us-two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.us-note { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+.us-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.us-table td { padding: 5px 0; border-top: 1px solid var(--line); vertical-align: middle; }
+.us-table tr:first-child td { border-top: 0; }
+.us-table td:last-child { text-align: right; white-space: nowrap; }
+.us-bar { height: 6px; background: var(--sunk); border-radius: 3px; overflow: hidden; margin-top: 3px; }
+.us-bar i { display: block; height: 100%; background: var(--accent); }
+#chart svg { width: 100%; height: 180px; display: block; }
+#chart .bar { fill: var(--accent); }
+#chart .bar:hover { opacity: .75; }
+#chart text { fill: var(--muted); font-size: 10px; }
+#chart line { stroke: var(--line); }
+.us-heat { display: grid; grid-template-columns: 36px repeat(24, 1fr); gap: 2px; font-size: 10px; color: var(--muted); }
+.us-heat .cell { aspect-ratio: 1; border-radius: 3px; background: color-mix(in srgb, var(--accent) calc(var(--a) * 100%), var(--sunk)); min-width: 0; }
+.us-heat .lab { align-self: center; }
+.us-empty { color: var(--muted); padding: 12px 0; }
+@media (max-width: 560px) { .us-heat .hr:nth-child(even) { visibility: hidden; } }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }

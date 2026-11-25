@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#151513" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<title>Usage · Project dashboard</title>
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/usage.css">
+</head>
+<body class="usage">
+<div class="us-wrap">
+  <header class="us-top">
+    <div>
+      <nav class="us-nav" aria-label="Pages"><a href="/">Runs &amp; workflows</a><a href="/recap">Recap</a><a href="/usage" aria-current="page">Usage</a></nav>
+      <h1>Usage</h1>
+      <p id="sub" class="sub"></p>
+    </div>
+    <div class="us-controls">
+      <label class="sr" for="days">Period</label>
+      <select id="days"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select>
+      <label class="sr" for="project">Project</label>
+      <select id="project"><option value="">All projects</option></select>
+    </div>
+  </header>
+  <section id="tiles" class="us-tiles" aria-label="Totals"></section>
+  <section class="us-card"><h2>Estimated cost per day</h2><div id="chart" role="img" aria-label="Bar chart of estimated cost per day"></div><p id="chart-note" class="us-note"></p></section>
+  <div class="us-two">
+    <section class="us-card"><h2>By project</h2><div id="projects"></div></section>
+    <section class="us-card"><h2>By model</h2><div id="models"></div></section>
+  </div>
+  <section class="us-card"><h2>When you prompt</h2><div id="heat"></div><p class="us-note">Prompts you sent, by weekday and hour (this machine's time zone).</p></section>
+  <p id="note" class="us-note"></p>
+</div>
+<script src="/usage.js"></script>
+</body>
+</html>

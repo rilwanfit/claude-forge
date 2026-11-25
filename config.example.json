@@ -1,0 +1,79 @@
+{
+  "port": 4777,
+  "profiles": [
+    {
+      "name": "default",
+      "dir": "~/.claude"
+    }
+  ],
+  "sessionDays": 21,
+  "doneDays": 14,
+  "githubOwners": [
+    "your-github-username"
+  ],
+  "inputLabels": [
+    "needs-input"
+  ],
+  "inputFiles": [
+    {
+      "repo": "~/Code/my-project",
+      "path": "docs/todo.md"
+    }
+  ],
+  "extraRepos": [],
+  "hideProjects": [],
+  "refreshSeconds": 60,
+  "githubRefreshSeconds": 300,
+  "defaultProfile": "default",
+  "claudeBin": "claude",
+  "maxConcurrent": 2,
+  "catchUpWindowHours": 12,
+  "secretEnv": [
+    "ANTHROPIC_API_KEY",
+    "GITHUB_TOKEN",
+    "GH_TOKEN"
+  ],
+  "connections": {
+    "github": {
+      "label": "GitHub",
+      "command": [
+        "gh",
+        "auth",
+        "status"
+      ],
+      "fix": "Run: gh auth login"
+    }
+  },
+  "toolPresets": [
+    {
+      "label": "Web search",
+      "tools": [
+        "WebSearch",
+        "WebFetch"
+      ]
+    },
+    {
+      "label": "Git history",
+      "tools": [
+        "Bash(git log:*)",
+        "Bash(git diff:*)"
+      ]
+    }
+  ],
+  "notify": {
+    "desktop": true,
+    "events": [
+      "approval",
+      "question",
+      "review",
+      "failed"
+    ],
+    "includeText": false
+  },
+  "sources": [
+    {
+      "type": "github-reviews",
+      "label": "Review requests"
+    }
+  ]
+}

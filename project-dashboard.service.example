@@ -1,0 +1,15 @@
+[Unit]
+Description=Project dashboard (local, 127.0.0.1:4777)
+
+[Service]
+# Runs are detached from this service so they outlive a restart of it.
+KillMode=process
+# Replace @DIR@ with the folder you cloned into, or run ./install-service.sh
+WorkingDirectory=@DIR@
+ExecStart=@NODE@ @DIR@/server.mjs
+# %h is your home folder. Add the folder that holds `claude` and `gh` if it is not here.
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

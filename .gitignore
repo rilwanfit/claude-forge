@@ -1,0 +1,7 @@
+data/
+state.json
+config.json
+node_modules/
+.env
+.env.*
+*.log
