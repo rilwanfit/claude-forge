@@ -22,7 +22,7 @@ Other Claude Code dashboards mostly show what Claude is doing *right now*: token
 
 ## A closer look
 
-**Answer with one click.** Suggested answers for the question a session asked, or write your own, from the browser or your phone. It continues the same conversation in the background.
+**Read the message properly, answer with one click.** Claude's message is rendered as real Markdown (tables, code, lists), and what needs you stands out: questions and "Decisions for you" sections are highlighted, and the options become numbered cards that match the answer buttons. Click one, or write your own, from the browser or your phone. It continues the same conversation in the background.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/reply.png">

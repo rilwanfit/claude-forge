@@ -719,7 +719,7 @@ async function replyToSession(body) {
 }
 const replyView = (m) => ({ id: m.id, sessionId: m.sessionId, state: m.state, startedAt: m.startedAt, endedAt: m.endedAt, result: m.result ? redactText(m.result) : null, error: m.error ? redactText(m.error) : null });
 
-const TYPES = { ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8" };
+const TYPES = { ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8" };
 const FILE_TYPES = { ".md": "text/plain; charset=utf-8", ".txt": "text/plain; charset=utf-8", ".json": "application/json", ".csv": "text/csv; charset=utf-8", ".png": "image/png", ".svg": "image/svg+xml", ".html": "text/html; charset=utf-8" };
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -766,7 +766,7 @@ const server = http.createServer(async (req, res) => {
     const p = url.pathname;
     if (req.method === "GET") {
       if (p === "/") return send(200, "text/html; charset=utf-8", await readFile(path.join(HERE, "index.html")));
-      if (["/app.css", "/app.js", "/recap.css", "/recap.js", "/usage.css", "/usage.js"].includes(p)) return send(200, TYPES[path.extname(p)], await readFile(path.join(HERE, p)));
+      if (["/app.css", "/app.js", "/recap.css", "/recap.js", "/usage.css", "/usage.js", "/mdview.mjs"].includes(p)) return send(200, TYPES[path.extname(p)], await readFile(path.join(HERE, p)));
       if (p === "/api/notify") return json(notifyView());
       if (p === "/usage") return send(200, "text/html; charset=utf-8", await readFile(path.join(HERE, "usage.html")));
       if (p === "/api/usage") {

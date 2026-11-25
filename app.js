@@ -1,4 +1,5 @@
 // Dashboard UI: sidebar, overview, schedule strip, workflow library and a detail panel. No build step.
+import { renderMarkdown } from "/mdview.mjs";
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const clip = (s, n) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s);
@@ -400,8 +401,8 @@ function replyBox(it) {
 }
 function sessionPanel(it) {
   return head(it.title, `${mark(it.projectKey, "sm")}<span>${esc(proj(it.projectKey).name)}</span>${prof(it.profile)}${chip(it)}<time>${ago(it.ts)}</time>`) +
-    `<div class="pbody">${it.detail && Array.isArray(it.detail) && it.kind !== "session" ? "" : ""}${Array.isArray(it.detail) && it.detail.length ? `<div class="sec"><h3>Claude is asking</h3><blockquote class="ask">${it.detail.map((q) => `<p>${esc(q)}</p>`).join("")}</blockquote></div>` : ""}
-    ${Array.isArray(it.detail) && it.detail.length && it.kind === "session" ? `<details class="sec" data-k="last"><summary>Claude's full message</summary><pre class="txt">${esc(it.answer || "")}</pre></details>` : `<div class="sec"><h3>Last answer</h3><pre class="txt">${esc(it.answer || it.detail || it.line || "")}</pre></div>`}
+    `<div class="pbody">${it.detail && Array.isArray(it.detail) && it.kind !== "session" ? "" : ""}${Array.isArray(it.detail) && it.detail.length ? `` : ""}
+   ${Array.isArray(it.detail) && it.detail.length && it.kind === "session" ? `<div class="sec" data-k="last"><h3>Claude's message</h3>${renderMarkdown(it.answer || "")}</div>` : `<div class="sec"><h3>Last answer</h3>${renderMarkdown(typeof (it.answer || it.detail || it.line) === "string" ? (it.answer || it.detail || it.line) : "") || '<p class="nothing">Nothing recorded.</p>'}</div>`}
     ${it.sessionId && it.status !== "running" ? replyBox(it) : ""}
     <div class="inline">${it.sessionId ? `<button class="btn${Array.isArray(it.detail) && it.detail.length && it.kind === "session" ? "" : " primary"}" data-act="terminal" data-session="${esc(it.sessionId)}">Open in terminal (${esc(it.profile || "default")})</button>` : ""}<button class="btn" data-act="copy" data-value="${esc(it.resume || "")}">Copy command</button><button class="btn" data-act="save-session" data-id="${esc(it.id)}">Save as workflow</button>${it.kind === "session" && it.key ? `<button class="btn ghost" data-act="dismiss" data-key="${esc(it.key)}">Mark handled</button>` : ""}</div></div>`;
 }
@@ -437,7 +438,7 @@ async function act(el) {
       for (let n = 0; n < 600; n++) {
         const r = await api(`/api/replies/${j.id}`); if (panel?.item !== it) return;
         if (r.state === "running") { out.innerHTML = `<p class="chip run spin">${sym("i-run")}Claude is answering…</p>`; await new Promise((res) => setTimeout(res, 2000)); continue; }
-        out.innerHTML = r.state === "done" ? `<h3>Claude replied</h3><pre class="txt">${esc(r.result || "(no text)")}</pre>` : `<p class="err" role="alert">${esc(r.error || "The reply failed.")}</p>`;
+        out.innerHTML = r.state === "done" ? `<h3>Claude replied</h3>${renderMarkdown(r.result || "") || "<p>(no text)</p>"}` : `<p class="err" role="alert">${esc(r.error || "The reply failed.")}</p>`;
         if (r.state === "done") { $("#reply-text").value = ""; load(true).catch(() => {}); }
         return;
       }

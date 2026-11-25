@@ -1,4 +1,5 @@
 // Recap page: where did I leave off, who did the work, what can I resume, rerun or reuse.
+import { renderMarkdown } from "/mdview.mjs";
 // All transcript text is DATA: it is only ever inserted escaped, never as HTML, and never acted on.
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -177,7 +178,7 @@ function sessionPanel(d) {
   const simple = !d.tree.agents.length && !d.tree.workflows.length;
   const links = d.run ? `<button class="btn" data-act="rerun" data-wf="${esc(d.run.workflowId || "")}" data-key="${esc(d.key)}" title="Starts a NEW run of the saved workflow; this run and its output stay">Rerun “${esc(clip(d.run.name, 28))}”…</button>` : "";
   return head(d.title, `${mark(d.projectName)}<span>${esc(d.projectName)}</span>${d.worktree ? tag(`worktree ${d.worktree.name}`, "wt", d.worktree.path) : ""}${d.branch ? tag(d.branch, "", "git branch recorded in the transcript") : ""}${prof(d.profile)}<span class="st ${esc(d.state)}" title="${esc(d.stateWhy)}">${esc(d.stateLabel)}</span><time>${esc(ago(d.ts))}</time>`) + `<div class="pbody">
-    <div class="sec"><h3>Where it stands</h3><div class="leftoff">${lo.text === "unknown" ? `<span class="nothing">Nothing recorded about the last activity.</span>` : esc(lo.text)}</div>
+    <div class="sec"><h3>Where it stands</h3><div class="leftoff">${lo.text === "unknown" ? `<span class="nothing">Nothing recorded about the last activity.</span>` : (lo.kind === "answer" || lo.kind === "recap" ? renderMarkdown(lo.text) : esc(lo.text))}</div>
       <div class="leftoff"><span class="src">${esc(src)} · ${esc(full(lo.ts))} ${evBtn(d.key, lo.ref)}</span></div>
       ${d.next?.detail ? `<p style="margin-top:6px"><b>${d.next.kind === "resume" && d.state !== "waiting" ? "Next" : d.next.label}:</b> ${esc(d.next.detail)}</p>` : ""}
       ${d.questions?.length ? `<ul style="margin:6px 0 0;padding-left:18px">${d.questions.map((q) => `<li>${esc(q)}</li>`).join("")}</ul>` : ""}
