@@ -18,6 +18,7 @@ import * as H from "./lib/handoff.mjs";
 import { loadConfig } from "./lib/config.mjs";
 import { EventLog, liveState } from "./lib/hooks.mjs";
 import { summarize as summarizeUsage } from "./lib/usage.mjs";
+import { suggestOptions } from "./lib/options.mjs";
 import { fetchSource } from "./lib/sources.mjs";
 import { fetchPeer } from "./lib/peers.mjs";
 import { Replies, BASE_TOOLS as REPLY_BASE } from "./lib/reply.mjs";
@@ -284,7 +285,8 @@ async function build({ forceGithub = false } = {}) {
     const questions = waiting ? questionsIn(s.lastAnswer.text) : [];
     const key = `session:${s.id}:${s.lastAnswer.uuid ?? answerTs}`;
     if (waiting && questions.length > 0 && s.mtime >= inputSince) {
-      p.input.push({ ...base, kind: "session", key, questions, answer: clip(s.lastAnswer.text, 6000), dismissed: !!saved.dismissed[key] });
+      const pend = index.get(`${s.profile}:${s.id}`)?.decisions?.at(-1); // a pending AskUserQuestion carries Claude's own options
+      p.input.push({ ...base, kind: "session", key, questions, options: suggestOptions(s.lastAnswer.text, questions, pend && pend.answer == null ? pend.options : []), answer: clip(s.lastAnswer.text, 6000), dismissed: !!saved.dismissed[key] });
     } else if (s.mtime >= doneSince) {
       const firstLine = s.lastAnswer.text.split("\n").map((l) => l.replace(/[*_`#>]/g, "").trim()).find((l) => l.length > 20) || "";
       p.done.push({ ...base, kind: "session", key, summary: clip(firstLine, 280), answer: clip(s.lastAnswer.text, 6000), interrupted: !waiting });
@@ -439,7 +441,7 @@ async function overview() {
     proj.git = { loose: p.loose.filter((l) => !l.dismissed).map((l) => l.text), recent: p.done.filter((d) => d.kind === "commit" || d.kind === "pr").slice(0, 8).map((d) => ({ title: d.title, ts: d.ts, url: d.url })) };
     for (const it of p.input) {
       if (it.dismissed) continue;
-      const common = { profile: it.profile, projectKey: p.key, title: it.title, ts: it.ts, key: it.key, line: it.questions?.[0] ?? "", detail: it.questions, answer: it.answer, resume: it.resume, prompt: it.prompt };
+      const common = { profile: it.profile, projectKey: p.key, title: it.title, ts: it.ts, key: it.key, line: it.questions?.[0] ?? "", detail: it.questions, options: it.options, answer: it.answer, resume: it.resume, prompt: it.prompt };
       if (it.kind === "session" && it.ts < needsSince) older.push({ ...common, id: it.key, kind: "session", label: it.approval ? "Needs approval" : "Asked you", rank: it.approval ? 0 : 1, primary: { act: "terminal", label: "Open in terminal", sessionId: it.sessionId, value: it.resume }, sessionId: it.sessionId });
       else if (it.kind === "session") needs.push({ ...common, id: it.key, kind: "session", label: it.approval ? "Needs approval" : "Asked you", rank: it.approval ? 0 : 1, primary: { act: "terminal", label: "Open in terminal", sessionId: it.sessionId, value: it.resume }, sessionId: it.sessionId });
       else if (it.kind === "checklist") needs.push({ ...common, id: it.key, kind: "checklist", label: "Checklist", rank: 3, line: `${it.items.filter((i) => !i.dismissed).length} open items`, primary: { act: "dismiss", label: "Mark handled" }, items: it.items });

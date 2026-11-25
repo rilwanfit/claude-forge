@@ -106,6 +106,7 @@ function actsFor(it, inNeeds) {
     else if (pr.act === "dismiss") out.push(`<button class="${cls}" data-act="dismiss" data-key="${esc(it.key)}">${esc(pr.label)}</button>`);
     else out.push(`<button class="${cls}" data-act="open" data-id="${esc(it.id)}">${esc(pr.label)}</button>`);
   }
+  if (inNeeds && it.kind === "session" && it.label !== "Needs approval") { out.unshift(`<button class="btn primary" data-act="open" data-id="${esc(it.id)}">Answer here</button>`); out[1] = out[1]?.replace('btn primary', 'btn'); }
   if (it.kind === "run" && ["done", "failed", "stopped", "rejected"].includes(it.status) && pr?.act !== "rerun" && wfOf(it.workflowId)) out.push(`<button class="btn" data-act="rerun" data-id="${esc(it.workflowId)}">Run again</button>`);
   if (it.kind === "session" && !inNeeds) out.push(`<button class="btn" data-act="save-session" data-id="${esc(it.id)}">Save as workflow</button>`);
   if (inNeeds && (it.kind === "pr" || it.kind === "issue" || it.kind === "external")) out.push(`<button class="btn ghost" data-act="dismiss" data-key="${esc(it.key)}">Handled</button>`);
@@ -118,7 +119,7 @@ function row(it, inNeeds) {
   const when = it.status === "running" || it.status === "queued" ? `since ${ago(it.ts)}`.replace("since just now", "just started") : ago(it.ts);
   return `<article class="row ${inNeeds ? "big" : ""}">${mark(it.projectKey)}<div style="min-width:0"><div class="rtitle">${title}</div>
     <div class="rmeta">${chip(it)}${sel === "all" ? `<span class="pname-s">${esc(proj(it.projectKey).name)}</span>` : ""}${prof(it.profile)}${it.ts ? `<time title="${esc(full(it.ts))}">${when}</time>` : ""}${it.late ? `<span>caught up late</span>` : ""}</div>
-    ${it.line ? `<p class="rline">${esc(clip(it.line, 240))}</p>` : ""}</div><div class="acts">${actsFor(it, inNeeds)}</div></article>`;
+    ${it.line ? `<p class="rline">${esc(clip(it.line, 240))}</p>` : ""}${inNeeds && it.kind === "session" && it.options?.length ? `<div class="opts" role="group" aria-label="Suggested answers">${it.options.slice(0, 4).map((o, i) => `<button type="button" class="opt" data-act="pick-open" data-id="${esc(it.id)}" data-i="${i}">${esc(o.label)}</button>`).join("")}</div>` : ""}</div><div class="acts">${actsFor(it, inNeeds)}</div></article>`;
 }
 
 function renderRuns() {
@@ -343,20 +344,23 @@ function schedulerPanel() {
     <div class="sec"><h3>Missed runs</h3>${list(s.missed, "None.")}<p class="hint" style="margin-top:6px">${esc(s.catchUp)}</p></div>
     <div class="sec"><h3>Skipped</h3>${list(s.skipped, "None.")}</div></div>`;
 }
-function replyBox() {
+function replyBox(it) {
+  const asking = it?.kind === "session" && Array.isArray(it.detail) && it.detail.length;
+  const opts = it?.options || [];
+  const chips = opts.length ? `<div class="opts" role="group" aria-label="Suggested answers">${opts.map((o, i) => `<button type="button" class="opt" data-act="pick" data-i="${i}" aria-pressed="false">${esc(o.label)}</button>`).join("")}</div><p class="hint">Click one to fill the answer, edit it if you like, then send.</p>` : "";
   const presets = (D.tools || []).map((t, i) => `<label class="chk"><input type="checkbox" data-rtool="${i}"> ${esc(t.label)}</label>`).join(" ");
-  return `<div class="sec" data-section="reply"><h3>Reply from here</h3>
-    <label class="sr" for="reply-text">Your reply</label><textarea id="reply-text" rows="3" placeholder="Type your answer. It continues this session in the background."></textarea>
+  return `<div class="sec" data-section="reply"><h3>${asking ? "Answer from here" : "Reply from here"}</h3>${chips}
+    <label class="sr" for="reply-text">Your reply</label><textarea id="reply-text" rows="3" placeholder="${asking ? "Or write your own answer. " : ""}It continues this session in the background."></textarea>
     <div class="inline">${presets ? `<span class="hint">Allow also:</span> ${presets}` : ""}</div>
-    <div class="inline"><button class="btn primary" data-act="reply-go">Send reply</button><span class="hint">Runs <code>claude --resume</code> without asking for permissions; it can read files${(D.tools || []).length ? " and use the tools you tick" : ""}. If the session is still open in a terminal, answer it there.</span></div>
+    <div class="inline"><button class="btn primary" data-act="reply-go">${asking ? "Send answer" : "Send reply"}</button><span class="hint">Runs <code>claude --resume</code> without asking for permissions; it can read files${(D.tools || []).length ? " and use the tools you tick" : ""}. If the session is still open in a terminal, answer it there.</span></div>
     <div id="reply-out" aria-live="polite"></div></div>`;
 }
 function sessionPanel(it) {
   return head(it.title, `${mark(it.projectKey, "sm")}<span>${esc(proj(it.projectKey).name)}</span>${prof(it.profile)}${chip(it)}<time>${ago(it.ts)}</time>`) +
-    `<div class="pbody">${it.detail && Array.isArray(it.detail) && it.kind !== "session" ? "" : ""}${Array.isArray(it.detail) && it.detail.length ? `<div class="sec"><h3>Asked you</h3><ul style="margin:0;padding-left:18px">${it.detail.map((q) => `<li>${esc(q)}</li>`).join("")}</ul></div>` : ""}
-    <div class="sec"><h3>Last answer</h3><pre class="txt">${esc(it.answer || it.detail || it.line || "")}</pre></div>
-    ${it.sessionId && it.status !== "running" ? replyBox() : ""}
-    <div class="inline">${it.sessionId ? `<button class="btn primary" data-act="terminal" data-session="${esc(it.sessionId)}">Open in terminal (${esc(it.profile || "default")})</button>` : ""}<button class="btn" data-act="copy" data-value="${esc(it.resume || "")}">Copy command</button><button class="btn" data-act="save-session" data-id="${esc(it.id)}">Save as workflow</button>${it.kind === "session" && it.key ? `<button class="btn ghost" data-act="dismiss" data-key="${esc(it.key)}">Mark handled</button>` : ""}</div></div>`;
+    `<div class="pbody">${it.detail && Array.isArray(it.detail) && it.kind !== "session" ? "" : ""}${Array.isArray(it.detail) && it.detail.length ? `<div class="sec"><h3>Claude is asking</h3><blockquote class="ask">${it.detail.map((q) => `<p>${esc(q)}</p>`).join("")}</blockquote></div>` : ""}
+    ${Array.isArray(it.detail) && it.detail.length && it.kind === "session" ? `<details class="sec" data-k="last"><summary>Claude's full message</summary><pre class="txt">${esc(it.answer || "")}</pre></details>` : `<div class="sec"><h3>Last answer</h3><pre class="txt">${esc(it.answer || it.detail || it.line || "")}</pre></div>`}
+    ${it.sessionId && it.status !== "running" ? replyBox(it) : ""}
+    <div class="inline">${it.sessionId ? `<button class="btn${Array.isArray(it.detail) && it.detail.length && it.kind === "session" ? "" : " primary"}" data-act="terminal" data-session="${esc(it.sessionId)}">Open in terminal (${esc(it.profile || "default")})</button>` : ""}<button class="btn" data-act="copy" data-value="${esc(it.resume || "")}">Copy command</button><button class="btn" data-act="save-session" data-id="${esc(it.id)}">Save as workflow</button>${it.kind === "session" && it.key ? `<button class="btn ghost" data-act="dismiss" data-key="${esc(it.key)}">Mark handled</button>` : ""}</div></div>`;
 }
 
 // ---------------------------------------------------------------- actions
@@ -376,6 +380,8 @@ async function act(el) {
     case "wf": openPanel({ type: "wf", id, focus: el.dataset.focus }); fillWfHist(id); break;
     case "new": openPanel({ type: "wf", prefill: { projectKey: sel !== "all" ? sel : undefined } }); break;
     case "scheduler": openPanel({ type: "scheduler" }); break;
+    case "pick": { const o = panel?.item?.options?.[Number(el.dataset.i)]; if (!o) break; $("#reply-text").value = o.value; document.querySelectorAll("#panel .opt").forEach((b) => b.setAttribute("aria-pressed", String(b === el))); $("#reply-text").focus(); break; }
+    case "pick-open": { const it = allItems().find((i) => i.id === id); if (!it) break; openPanel({ type: "session", item: it }); const o = it.options?.[Number(el.dataset.i)]; if (o) { $("#reply-text").value = o.value; document.querySelectorAll("#panel .opt")[Number(el.dataset.i)]?.setAttribute("aria-pressed", "true"); } $("#panel [data-section=reply]")?.scrollIntoView({ block: "center" }); break; }
     case "reply-go": return guard(async () => {
       const it = panel?.item; const text = $("#reply-text").value.trim(); if (!it?.sessionId || !text) { toast("Write a reply first"); return; }
       const tools = [...document.querySelectorAll("[data-rtool]:checked")].flatMap((c) => D.tools[Number(c.dataset.rtool)].tools);
@@ -431,6 +437,7 @@ document.addEventListener("submit", async (e) => {
 });
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && panel) { closePanel(); return; }
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && e.target.id === "reply-text") { e.preventDefault(); document.querySelector('[data-act="reply-go"]')?.click(); return; }
   if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.metaKey || e.ctrlKey || e.altKey || panel) return;
   if (/^[0-9]$/.test(e.key) && D) { const k = e.key === "0" ? "all" : D.projects[Number(e.key) - 1]?.key; if (k) { sel = k; localStorage.setItem("project", sel); render(); } }
 });

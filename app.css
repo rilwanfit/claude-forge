@@ -182,3 +182,15 @@ details.sec > summary { cursor: pointer; font-size: 12px; font-weight: 600; colo
 /* reply box */
 #reply-text { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 10px; resize: vertical; min-height: 72px; margin-bottom: 8px; }
 .chk { display: inline-flex; gap: 4px; align-items: center; font-size: 13px; margin-right: 8px; }
+
+/* suggested answers */
+.opts { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
+.opt { border: 1px solid var(--accent); background: var(--accent-soft); color: var(--ink); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-weight: 600; min-height: 32px; }
+.opt:hover { background: var(--accent); color: var(--accent-ink); }
+.opt[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.row .opts { margin: 8px 0 0; } .row .opt { padding: 4px 12px; font-size: 13px; min-height: 28px; }
+blockquote.ask { margin: 0; padding: 8px 14px; border-left: 3px solid var(--accent); background: var(--sunk); border-radius: 0 8px 8px 0; }
+blockquote.ask p { margin: 4px 0; }
+@media (max-width: 760px) { .opt { min-height: 40px; } }
+
+details.sec > summary { cursor: pointer; font-weight: 600; color: var(--muted); margin-bottom: 6px; }

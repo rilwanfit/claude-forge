@@ -20,7 +20,7 @@ Other Claude Code dashboards mostly show what Claude is doing *right now*: token
 
 ## A closer look
 
-**Reply without opening a terminal.** Answer a session from the browser or your phone; it continues the same conversation in the background.
+**Answer with one click.** Suggested answers for the question a session asked, or write your own, from the browser or your phone. It continues the same conversation in the background.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/reply.png">
@@ -150,7 +150,7 @@ You are told when something new needs you: a permission request (needs hooks, se
 
 ## Reply from the browser
 
-Open a session in the dashboard and use **Reply from here** to answer a question without going to a terminal. It continues the same conversation in the background with `claude --resume` and shows the answer when it is done, which also works from your phone if you [expose the dashboard](#reaching-it-from-other-devices) with a token.
+When a session asks you something, the card shows **suggested answers** as buttons: Claude's own options when it used a question prompt, or the options it listed in its message ("1. … 2. …", "A or B?"), or Yes / No. Click one (or write your own) and press **Send answer**. Open a session and use **Reply from here** to answer without going to a terminal. It continues the same conversation in the background with `claude --resume` and shows the answer when it is done, which also works from your phone if you [expose the dashboard](#reaching-it-from-other-devices) with a token.
 
 It is deliberately limited: the reply can read files and use only the extra tools you tick (the `toolPresets` in `config.json`); it never stops to ask for permission. It refuses a session that is still open in a terminal, because two programs writing to one conversation would corrupt it, so a live "Needs approval" prompt has to be answered in that terminal. One reply per session runs at a time.
 
