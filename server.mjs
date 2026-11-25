@@ -767,6 +767,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET") {
       if (p === "/") return send(200, "text/html; charset=utf-8", await readFile(path.join(HERE, "index.html")));
       if (["/app.css", "/app.js", "/recap.css", "/recap.js", "/usage.css", "/usage.js"].includes(p)) return send(200, TYPES[path.extname(p)], await readFile(path.join(HERE, p)));
+      if (p === "/api/notify") return json(notifyView());
       if (p === "/usage") return send(200, "text/html; charset=utf-8", await readFile(path.join(HERE, "usage.html")));
       if (p === "/api/usage") {
         const days = Math.min(90, Math.max(1, Number(url.searchParams.get("days")) || 30)); const only = url.searchParams.get("project");
@@ -803,6 +804,15 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST") {
       const body = await readJson(req);
       let m;
+      if (p === "/api/notify/phone") {
+        if (NOTIFY_OFF) throw new HttpError(409, 'Notifications are turned off in config.json ("notify": false).');
+        const action = String(body.action || "");
+        if (action === "enable") { saved.notify = { ...(saved.notify || {}), ntfyTopic: saved.notify?.ntfyTopic || "nudge-" + crypto.randomBytes(15).toString("base64url") }; await persist(); }
+        else if (action === "disable") { if (saved.notify) delete saved.notify.ntfyTopic; await persist(); }
+        else if (action === "test") { await deliverNow({ title: "Test · Nudge", body: "If you can read this, notifications work.", generic: { title: "Test notification", body: "Notifications work." } }); }
+        else throw new HttpError(400, "Unknown action");
+        return json(notifyView());
+      }
       if (p === "/api/dismiss") {
         const { key, undo } = body;
         if (typeof key !== "string" || key.length > 500) return send(400, "text/plain", "bad key");
@@ -845,11 +855,18 @@ server.listen(config.port, HOST, () => console.log(`project dashboard on http://
 await rebuild({ forceGithub: true });
 setInterval(() => rebuild(), config.refreshSeconds * 1000);
 // Notifications: watch the same "needs you" list the page shows. Off with "notify": false; the first pass only learns what is already there.
-if (config.notify !== false) {
-  const cfg = typeof config.notify === "object" ? config.notify : {};
-  const notifier = new Notifier({ events: cfg.events || DEFAULT_EVENTS, deliver: makeDeliver(cfg, { publicUrl: config.publicUrl || "" }), projectName: (i) => projectOf(i.projectKey)?.name || "" });
+const NOTIFY_OFF = config.notify === false;
+const notifyCfg = () => { // config.json plus the phone-push topic you set up in the page (kept in state.json, never in git)
+  const base = typeof config.notify === "object" ? config.notify : {};
+  const topic = saved.notify?.ntfyTopic;
+  return { ...base, ...(topic ? { ntfy: { server: base.ntfy?.server || saved.notify?.server, topic } } : {}) };
+};
+const deliverNow = (m) => makeDeliver(notifyCfg(), { publicUrl: config.publicUrl || "" })(m);
+if (!NOTIFY_OFF) {
+  const notifier = new Notifier({ events: notifyCfg().events || DEFAULT_EVENTS, deliver: deliverNow, projectName: (i) => projectOf(i.projectKey)?.name || "" });
   setInterval(async () => { try { await notifier.observe((await overview()).needs); } catch { /* next tick */ } }, 5000);
 }
+const notifyView = () => { const c = notifyCfg(); return { disabled: NOTIFY_OFF, desktop: !NOTIFY_OFF && c.desktop !== false, platform: process.platform, events: c.events || DEFAULT_EVENTS, phone: c.ntfy?.topic ? { on: true, topic: c.ntfy.topic, server: (c.ntfy.server || "https://ntfy.sh").replace(/\/$/, ""), fromConfig: !saved.notify?.ntfyTopic } : { on: false }, includeText: !!c.includeText }; };
 // Hook events arrive instantly; refresh within a few seconds instead of waiting for the minute tick.
 let lastQuick = 0;
 setInterval(async () => { try { const at = eventLog.pos; const st = await stat(EVENTS_FILE).catch(() => null); if (st && st.size !== at && Date.now() - lastQuick > 4000) { lastQuick = Date.now(); await rebuild(); } } catch { /* next tick */ } }, 2000);

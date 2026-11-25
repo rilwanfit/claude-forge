@@ -194,3 +194,4 @@ blockquote.ask p { margin: 4px 0; }
 @media (max-width: 760px) { .opt { min-height: 40px; } }
 
 details.sec > summary { cursor: pointer; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+.hint + .inline, p + .inline { margin-top: 10px; }

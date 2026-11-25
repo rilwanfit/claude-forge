@@ -192,8 +192,31 @@ function renderPanel() {
   if (panel.type === "run") { el.innerHTML = head("Loading…", "") + `<div class="pbody"><p class="empty">Loading…</p></div>`; return refreshRunPanel(); }
   if (panel.type === "wf") return (el.innerHTML = workflowPanel(panel.id ? wfOf(panel.id) : panel.prefill || {}, panel.id));
   if (panel.type === "ask") { el.innerHTML = askPanel(); $("#ask-q")?.focus(); return; }
+  if (panel.type === "notify") { el.innerHTML = head("Notifications", "") + `<div class="pbody"><p class="empty">Loading…</p></div>`; return loadNotify(); }
   if (panel.type === "scheduler") return (el.innerHTML = schedulerPanel());
   if (panel.type === "session") return (el.innerHTML = sessionPanel(panel.item));
+}
+
+// ---- notifications
+async function loadNotify(fresh) {
+  try {
+    const n = fresh || await api("/api/notify"); if (panel?.type !== "notify") return;
+    const url = n.phone.on ? `${n.phone.server}/${n.phone.topic}` : "";
+    const kinds = { approval: "a permission waiting for your approval", question: "a question a session asked you", review: "a run waiting for your review", failed: "a failed run" };
+    $("#panel").innerHTML = head("Notifications", n.disabled ? `<span class="chip mute">Off in config.json</span>` : `<span class="chip ok">${sym("i-check")}On</span>`) + `<div class="pbody">
+      <div class="sec"><h3>You are told about</h3><ul style="margin:0;padding-left:18px">${n.events.map((e) => `<li>${esc(kinds[e] || e)}</li>`).join("")}</ul></div>
+      <div class="sec"><h3>This computer</h3><p>${n.desktop ? `A desktop popup appears (${n.platform === "darwin" ? "macOS notification" : "notify-send"}). It shows the project and the question, and stays on this machine.` : "Desktop popups are off."}</p></div>
+      <div class="sec"><h3>Your phone</h3>${n.phone.on ? `
+        <p>Phone alerts are <b>on</b>. To receive them:</p>
+        <ol style="margin:0 0 8px;padding-left:18px"><li>Install the free <a href="https://ntfy.sh" target="_blank" rel="noopener noreferrer">ntfy</a> app (iPhone or Android).</li><li>Subscribe to this topic: <code>${esc(n.phone.topic)}</code></li><li>Press <b>Send test</b>.</li></ol>
+        <p><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(url)}</a></p>
+        <p class="hint">Alerts say only “Claude needs you”: no project names or text leave this computer. They pass through ${esc(n.phone.server)}, and anyone who knows the topic can read them, so keep it private.</p>
+        <div class="inline"><button class="btn primary" data-act="notify-test">Send test</button>${n.phone.fromConfig ? "" : `<button class="btn" data-act="notify-off">Turn off phone alerts</button>`}</div>` : `
+        <p>Get an alert on your phone when something needs you, even when you are away from this computer. One click creates a private topic; you subscribe to it in the free ntfy app.</p>
+        <p class="hint">Nothing is sent until you set this up. Alerts carry only “Claude needs you”, never project names or text, and they pass through ntfy.sh (or your own server).</p>
+        <div class="inline"><button class="btn primary" data-act="notify-on" ${n.disabled ? "disabled" : ""}>Set up phone alerts</button></div>`}</div>
+      <p class="hint">Change what is sent or turn everything off with <code>notify</code> in config.json.</p></div>`;
+  } catch (e) { $("#panel").innerHTML = head("Notifications", "") + `<div class="pbody"><p class="err">${esc(e.message)}</p></div>`; }
 }
 
 // ---- run detail
@@ -380,6 +403,10 @@ async function act(el) {
     case "wf": openPanel({ type: "wf", id, focus: el.dataset.focus }); fillWfHist(id); break;
     case "new": openPanel({ type: "wf", prefill: { projectKey: sel !== "all" ? sel : undefined } }); break;
     case "scheduler": openPanel({ type: "scheduler" }); break;
+    case "notify": openPanel({ type: "notify" }); break;
+    case "notify-on": return guard(async () => { await loadNotify(await api("/api/notify/phone", { action: "enable" })); toast("Phone alerts are on. Subscribe in the ntfy app."); });
+    case "notify-off": return guard(async () => { await loadNotify(await api("/api/notify/phone", { action: "disable" })); toast("Phone alerts are off"); });
+    case "notify-test": return guard(async () => { await api("/api/notify/phone", { action: "test" }); toast("Test sent"); });
     case "pick": { const o = panel?.item?.options?.[Number(el.dataset.i)]; if (!o) break; $("#reply-text").value = o.value; document.querySelectorAll("#panel .opt").forEach((b) => b.setAttribute("aria-pressed", String(b === el))); $("#reply-text").focus(); break; }
     case "pick-open": { const it = allItems().find((i) => i.id === id); if (!it) break; openPanel({ type: "session", item: it }); const o = it.options?.[Number(el.dataset.i)]; if (o) { $("#reply-text").value = o.value; document.querySelectorAll("#panel .opt")[Number(el.dataset.i)]?.setAttribute("aria-pressed", "true"); } $("#panel [data-section=reply]")?.scrollIntoView({ block: "center" }); break; }
     case "reply-go": return guard(async () => {
@@ -442,6 +469,7 @@ document.addEventListener("keydown", (e) => {
   if (/^[0-9]$/.test(e.key) && D) { const k = e.key === "0" ? "all" : D.projects[Number(e.key) - 1]?.key; if (k) { sel = k; localStorage.setItem("project", sel); render(); } }
 });
 $("#refresh").addEventListener("click", async (e) => { e.target.disabled = true; try { await load(true); toast("Updated"); } finally { e.target.disabled = false; } });
+$("#notify").addEventListener("click", () => act({ dataset: { act: "notify" } }));
 $("#ask").addEventListener("click", () => act({ dataset: { act: "ask" } }));
 $("#new-wf").addEventListener("click", () => act({ dataset: { act: "new" } }));
 document.addEventListener("visibilitychange", () => { if (!document.hidden) load().catch(() => {}); });
