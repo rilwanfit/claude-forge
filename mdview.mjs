@@ -49,9 +49,9 @@ function parseList(lines, i) {
   }
   const root = { children: [] }, stack = [{ indent: -1, node: root }];
   for (const it of items) { while (stack.at(-1).indent >= it.indent) stack.pop(); stack.at(-1).node.children.push(it); stack.push({ indent: it.indent, node: it }); }
-  const render = (list) => { if (!list.length) return ""; const tag = list[0].ordered ? "ol" : "ul"; return `<${tag}>${list.map((it) => { const task = /^\[([ xX])\]\s+/.exec(it.text); const body = task ? it.text.slice(task[0].length) : it.text; return `<li${task ? ` class="task${task[1] !== " " ? " done" : ""}"` : ""}>${task ? `<span class="box" aria-hidden="true">${task[1] !== " " ? "✓" : ""}</span>` : ""}${inline(body)}${render(it.children)}</li>`; }).join("")}</${tag}>`; };
+  const render = (list, mark) => { if (!list.length) return ""; const tag = list[0].ordered ? "ol" : "ul"; return `<${tag}>${list.map((it) => { const task = /^\[([ xX])\]\s+/.exec(it.text); const body = task ? it.text.slice(task[0].length) : it.text; const cls = [task ? "task" + (task[1] !== " " ? " done" : "") : "", mark?.(body) ? "md-q" : ""].filter(Boolean).join(" "); return `<li${cls ? ` class="${cls}"` : ""}>${task ? `<span class="box" aria-hidden="true">${task[1] !== " " ? "✓" : ""}</span>` : ""}${inline(body)}${render(it.children)}</li>`; }).join("")}</${tag}>`; };
   const top = root.children;
-  return { html: render(top), texts: top.map((x) => x.text), count: top.length, ordered: top[0]?.ordered, next: j };
+  return { html: render(top), texts: top.map((x) => x.text), count: top.length, ordered: top[0]?.ordered, next: j, renderMarked: (mark) => render(top, mark) };
 }
 
 function blocksOf(src) {
@@ -69,7 +69,7 @@ function blocksOf(src) {
       blocks.push({ type: "table", html: `<div class="md-table"><table><thead><tr>${head.map((c) => `<th>${inline(c)}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` }); continue;
     }
     if (/^\s*>/.test(l)) { const buf = []; for (; i < lines.length && /^\s*>/.test(lines[i]); i++) buf.push(lines[i].replace(/^\s*>\s?/, "")); i--; const inner = buf.join("\n"); const kind = /^\s*(\*\*)?(note|tip|important|warning|caution)\b/i.exec(inner)?.[2]?.toLowerCase(); blocks.push({ type: "quote", html: `<blockquote class="md-quote${kind ? " md-" + (kind === "caution" ? "warning" : kind) : ""}">${renderBlocks(inner, false)}</blockquote>` }); continue; }
-    if (LI.test(l)) { const r = parseList(lines, i); i = r.next - 1; blocks.push({ type: "list", html: r.html, texts: r.texts, count: r.count, ordered: r.ordered }); continue; }
+    if (LI.test(l)) { const r = parseList(lines, i); i = r.next - 1; blocks.push({ type: "list", html: r.html, texts: r.texts, count: r.count, ordered: r.ordered, renderMarked: r.renderMarked }); continue; }
     if (!l.trim()) continue;
     const buf = [l]; while (i + 1 < lines.length && lines[i + 1].trim() && !/^(\s*(```|~~~)|#{1,6}\s|\s*>|\s*([-*+]|\d{1,3}[.)])\s)/.test(lines[i + 1])) buf.push(lines[++i]);
     blocks.push({ type: "p", text: buf.join(" "), split: null, html: `<p>${inline(buf.join("\n"))}</p>` });
@@ -99,6 +99,7 @@ function renderBlocks(src, highlight) {
     if (set.has(i)) {
       if (b.type === "p" && b.split?.lead) return `<p>${inline(b.split.lead)}</p><aside class="md-ask">${label}<p>${inline(b.split.ask)}</p></aside>`; // only the question is marked, not the explanation before it
       if (b.type === "p") return `<aside class="md-ask">${label}<p>${inline(b.split ? b.split.ask : b.text)}</p></aside>`;
+      if (b.type === "list") return `<div class="md-asklist">${label}${b.renderMarked(isQuestion)}</div>`; // only the question items are marked, the rest of the list stays plain
       return `<aside class="md-ask">${label}${b.html}</aside>`;
     }
     const near = set.has(i - 1) || set.has(i + 1);

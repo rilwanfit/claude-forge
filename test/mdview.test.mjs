@@ -55,3 +55,11 @@ test("quoted copy that ends in a question mark is not an ask, a real question qu
   assert.ok(!/md-ask/.test(renderMarkdown('Hook: "Wasmachine lekt om 21:00. Wie antwoordt?"')));
   assert.match(renderMarkdown('Did you mean "staging"?'), /md-ask/);
 });
+
+test("in a list only the question items are highlighted, the rest stays plain", () => {
+  const h = renderMarkdown("Status:\n\n- Tests pass\n- Should I merge #12 now?\n- Docs are updated\n- Do you want a changelog entry?");
+  assert.equal((h.match(/class="md-q"/g) || []).length, 2);
+  assert.match(h, /<li class="md-q">Should I merge #12 now\?<\/li>/); assert.match(h, /<li>Tests pass<\/li>/); assert.match(h, /<li>Docs are updated<\/li>/);
+  assert.ok(!/<aside class="md-ask">/.test(h), "the list is not wrapped as one big callout");
+  assert.match(h, /<div class="md-asklist"><span class="md-ask-label">/);
+});

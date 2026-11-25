@@ -34,3 +34,7 @@
 .md .md-h { text-transform: none; letter-spacing: 0; color: var(--ink); }
 .md h4.md-h, .md h5.md-h { color: var(--muted); }
 .md .md-ask-sec p { font-weight: 400; font-size: 14px; } .md .md-ask-sec > p:last-child { font-weight: 600; font-size: 15px; }
+
+/* a list that mixes status lines and questions: only the question items stand out */
+.md .md-asklist { margin: 10px 0; } .md .md-asklist > ul, .md .md-asklist > ol { margin-bottom: 0; }
+.md li.md-q { background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 4px 10px; margin: 5px 0 5px -4px; font-weight: 600; }
