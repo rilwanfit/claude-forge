@@ -1,0 +1,36 @@
+/* Rendered Markdown (messages and reports) and the "Needs your input" highlights. Uses the page tokens from app.css; the report page defines its own. */
+/* rendered messages: readable markdown, and what needs YOU stands out */
+.md { font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
+.md > :first-child { margin-top: 0; } .md > :last-child { margin-bottom: 0; }
+.md p { margin: 0 0 10px; }
+.md .md-h { margin: 16px 0 6px; font-weight: 650; line-height: 1.3; }
+.md h2.md-h { font-size: 17px; } .md h3.md-h { font-size: 15px; } .md h4.md-h, .md h5.md-h { font-size: 14px; color: var(--muted); text-transform: none; }
+.md ul, .md ol { margin: 0 0 10px; padding-left: 22px; } .md li { margin: 3px 0; } .md li > ul, .md li > ol { margin: 3px 0 0; }
+.md li.task { list-style: none; margin-left: -20px; display: flex; gap: 8px; align-items: baseline; }
+.md li.task .box { flex: none; width: 15px; height: 15px; border: 1.5px solid var(--muted); border-radius: 4px; display: inline-grid; place-items: center; font-size: 11px; line-height: 1; transform: translateY(2px); }
+.md li.task.done .box { background: var(--ok); border-color: var(--ok); color: var(--bg); } .md li.task.done { color: var(--muted); }
+.md code { font: 12.5px/1.4 ui-monospace, "JetBrains Mono", monospace; background: var(--sunk); border: 1px solid var(--line); border-radius: 5px; padding: 0 5px; }
+.md .md-code { position: relative; margin: 0 0 12px; padding: 10px 12px; background: var(--sunk); border: 1px solid var(--line); border-radius: 8px; overflow: auto; max-height: 360px; }
+.md .md-code code { background: none; border: 0; padding: 0; font-size: 12.5px; white-space: pre; }
+.md .md-code[data-lang]::before { content: attr(data-lang); position: absolute; top: 4px; right: 8px; font: 11px ui-monospace, monospace; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.md a { color: var(--run); text-underline-offset: 2px; }
+.md hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
+.md-table { overflow-x: auto; margin: 0 0 12px; } .md table { border-collapse: collapse; font-size: 13px; min-width: 60%; }
+.md th, .md td { border: 1px solid var(--line); padding: 5px 10px; text-align: left; vertical-align: top; } .md th { background: var(--sunk); font-weight: 650; }
+.md .md-quote { margin: 0 0 12px; padding: 6px 14px; border-left: 3px solid var(--line); color: var(--muted); } .md .md-quote p:last-child { margin-bottom: 0; }
+.md .md-note, .md .md-tip { border-left-color: var(--run); } .md .md-warning, .md .md-important { border-left-color: var(--warn); background: color-mix(in srgb, var(--warn) 9%, transparent); }
+
+/* what needs your answer */
+.md .md-ask { position: relative; margin: 12px 0; padding: 12px 14px 10px; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); border-left: 4px solid var(--accent); border-radius: 10px; color: var(--ink); }
+.md .md-ask-label { display: inline-flex; gap: 5px; align-items: center; font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+.md .md-ask-label svg { width: 13px; height: 13px; }
+.md .md-ask > p:last-child, .md .md-ask > ul:last-child, .md .md-ask > ol:last-child { margin-bottom: 2px; }
+.md .md-ask p { font-weight: 600; font-size: 15px; }
+.md .md-ask-sec > .md-h { margin-top: 4px; }
+.md .md-options { list-style: none; padding: 0; counter-reset: opt; display: grid; gap: 6px; }
+.md .md-options > li { counter-increment: opt; position: relative; padding: 8px 12px 8px 40px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; margin: 0; }
+.md .md-options > li::before { content: counter(opt); position: absolute; left: 10px; top: 8px; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 12px; display: grid; place-items: center; }
+.md .md-options > li > ul, .md .md-options > li > ol { margin-top: 4px; }
+.md .md-h { text-transform: none; letter-spacing: 0; color: var(--ink); }
+.md h4.md-h, .md h5.md-h { color: var(--muted); }
+.md .md-ask-sec p { font-weight: 400; font-size: 14px; } .md .md-ask-sec > p:last-child { font-weight: 600; font-size: 15px; }

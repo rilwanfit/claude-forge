@@ -8,7 +8,19 @@ const MAX_HIGHLIGHTS = 3;
 
 const safeHref = (u) => { try { const x = new URL(u); return x.protocol === "https:" || x.protocol === "http:" ? x.href : null; } catch { return null; } };
 const plain = (s) => String(s).replace(/`([^`]*)`/g, "$1").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").replace(/(\*\*|__|~~|\*|_)/g, "").trim();
-const isQuestion = (s) => { const t = plain(s).replace(/[)"”'\]]+$/, ""); return /\?$/.test(t) || (ASK_PHRASE.test(t) && t.includes("?")); };
+// A question mark inside a closing quote ('..."?' is fine, '...?"' is a quoted line) does not count: quoted copy is not an ask.
+const isQuestion = (s) => { const t = plain(s).replace(/[)\]]+$/, ""); return /\?$/.test(t) || (ASK_PHRASE.test(t) && /\?\s*[)\]]*$/.test(t)); };
+const SENT = /(?<=[.!?…])\s+(?=[A-Z"“'(\[*`_]|\d)/;
+const AUX = /^(do|does|did|should|shall|can|could|would|will|is|are|was|were|may|might|want me|which|what|how|when|where|who|why|any|anything)\b/i;
+/** Splits a paragraph at its final question: { lead, ask } where ask runs from the question to the end. null when it asks nothing. */
+function askSplit(raw) {
+  const sents = String(raw).split(SENT);
+  const asks = (x) => isQuestion(x) && (ASK_PHRASE.test(x) || AUX.test(plain(x)) || x === sents[sents.length - 1]);
+  let last = -1; for (let i = sents.length - 1; i >= 0; i--) if (asks(sents[i])) { last = i; break; }
+  if (last < 0) return null;
+  let start = last; while (start > 0 && isQuestion(sents[start - 1])) start--; // consecutive questions belong together
+  return { lead: sents.slice(0, start).join(" "), ask: sents.slice(start).join(" ") };
+}
 
 export function inline(src) {
   const codes = [];
@@ -60,7 +72,7 @@ function blocksOf(src) {
     if (LI.test(l)) { const r = parseList(lines, i); i = r.next - 1; blocks.push({ type: "list", html: r.html, texts: r.texts, count: r.count, ordered: r.ordered }); continue; }
     if (!l.trim()) continue;
     const buf = [l]; while (i + 1 < lines.length && lines[i + 1].trim() && !/^(\s*(```|~~~)|#{1,6}\s|\s*>|\s*([-*+]|\d{1,3}[.)])\s)/.test(lines[i + 1])) buf.push(lines[++i]);
-    blocks.push({ type: "p", text: buf.join(" "), html: `<p>${inline(buf.join("\n"))}</p>` });
+    blocks.push({ type: "p", text: buf.join(" "), split: null, html: `<p>${inline(buf.join("\n"))}</p>` });
   }
   return blocks;
 }
@@ -80,10 +92,15 @@ function renderBlocks(src, highlight) {
   }
   flush();
   // 2. questions elsewhere: only the last few are marked, so a long message is not a wall of highlights
-  const qIdx = out.map((b, i) => ((b.type === "p" && isQuestion(b.text)) || (b.type === "list" && b.texts.some((t) => isQuestion(t))) ? i : -1)).filter((i) => i >= 0).slice(-MAX_HIGHLIGHTS);
+  for (const b of out) if (b.type === "p") b.split = askSplit(b.text);
+  const qIdx = out.map((b, i) => ((b.type === "p" && b.split) || (b.type === "list" && b.texts.some((t) => isQuestion(t))) ? i : -1)).filter((i) => i >= 0).slice(-MAX_HIGHLIGHTS);
   const set = new Set(qIdx);
   return out.map((b, i) => {
-    if (set.has(i)) return `<aside class="md-ask">${label}${b.html}</aside>`;
+    if (set.has(i)) {
+      if (b.type === "p" && b.split?.lead) return `<p>${inline(b.split.lead)}</p><aside class="md-ask">${label}<p>${inline(b.split.ask)}</p></aside>`; // only the question is marked, not the explanation before it
+      if (b.type === "p") return `<aside class="md-ask">${label}<p>${inline(b.split ? b.split.ask : b.text)}</p></aside>`;
+      return `<aside class="md-ask">${label}${b.html}</aside>`;
+    }
     const near = set.has(i - 1) || set.has(i + 1);
     if (b.type === "list" && near && b.count >= 2 && b.count <= 8) return b.html.replace(/^<(ul|ol)>/, '<$1 class="md-options">');
     return b.html;

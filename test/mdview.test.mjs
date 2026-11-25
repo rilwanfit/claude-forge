@@ -38,3 +38,20 @@ test("only the last few questions are highlighted, and plain statements never ar
   assert.equal((renderMarkdown("Everything is fine. No questions.").match(/md-ask/g) || []).length, 0);
   assert.equal(renderMarkdown(""), "");
 });
+
+test("only the question is highlighted inside a long paragraph, not the explanation before it", () => {
+  const h = renderMarkdown("The web root is the public folder of the newest release, so the document root has to point there and the old symlink must go. Nothing else changes. Do you want me to switch it now, or wait until after the release?");
+  assert.match(h, /<p>The web root is the public folder[^<]*Nothing else changes\.<\/p><aside class="md-ask">.*Do you want me to switch it now.*<\/aside>/s);
+  assert.ok(!/<aside[^>]*>[^]*The web root/.test(h), "the explanation stays outside the callout");
+});
+
+test("a question in the middle of a paragraph is found, with its follow-up sentence", () => {
+  const h = renderMarkdown("I could not reproduce it. Which one fits? If the second phone is still in use, choose Option 1. Otherwise ignore this.");
+  assert.match(h, /<aside class="md-ask">.*Which one fits\? If the second phone is still in use, choose Option 1\. Otherwise ignore this\./s);
+  assert.match(h, /<p>I could not reproduce it\.<\/p>/);
+});
+
+test("quoted copy that ends in a question mark is not an ask, a real question quoting something is", () => {
+  assert.ok(!/md-ask/.test(renderMarkdown('Hook: "Wasmachine lekt om 21:00. Wie antwoordt?"')));
+  assert.match(renderMarkdown('Did you mean "staging"?'), /md-ask/);
+});

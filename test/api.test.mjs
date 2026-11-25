@@ -42,6 +42,15 @@ test("project -> save workflow -> run -> open result -> rerun with changed input
   assert.match(page, /Period \d{4}-\d\d-\d\d to/);
   assert.equal((await fetch(`${base()}/runs/${run.id}/files/..%2F..%2Fstore.json`)).status, 404);
 
+  // a richer report renders as real Markdown (tables, task lists), stays safe, is styled inline (the page's CSP allows nothing else) and is not "highlighted" like a question
+  const outDir = path.join(tmp, "data/runs", run.id, "output");
+  await writeFile(path.join(outDir, "rich.md"), "# Q4\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\n- [x] done\n\n<script>bad()</script>\n\nShould we ship this?\n");
+  const rich = await (await fetch(`${base()}/runs/${run.id}/report?file=rich.md`)).text();
+  assert.match(rich, /<div class="md">/); assert.match(rich, /<td>2<\/td>/); assert.match(rich, /class="task done"/);
+  assert.ok(!rich.includes("<script>bad()"), "html in a report never runs"); assert.match(rich, /&lt;script&gt;bad\(\)/);
+  assert.ok(!/<aside class="md-ask">/.test(rich), "a report is a deliverable, not a question");
+  assert.match(rich, /<style>[^]*\.md-options/);
+
   // rerun with a changed input: a fresh run, the old result stays
   const second = (await api(`/api/workflows/${saved.id}/run`, { inputs: { period: { mode: "relative", days: 14 } }, requestId: "a2", rerun: true })).json.run;
   const d2 = await waitStatus(second.id, "done");

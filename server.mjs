@@ -10,7 +10,7 @@ import { promisify } from "node:util";
 import { readFile, writeFile, readdir, stat, open, rename, mkdir } from "node:fs/promises";
 import { Engine, HttpError, redact, ACTIVE, WAITING, expand as expandPath } from "./lib/engine.mjs";
 import { occurrences, nextRun, describeSchedule } from "./lib/schedule.mjs";
-import { markdown } from "./lib/md.mjs";
+import { renderMarkdown } from "./mdview.mjs";
 import { textOf, promptText, questionsIn } from "./lib/text.mjs";
 import { TranscriptIndex } from "./lib/index.mjs";
 import * as V from "./lib/views.mjs";
@@ -525,7 +525,7 @@ async function assistantAnswer(run) {
     const byKey = new Map([...o.needs, ...o.older].filter((i) => i.key && i.kind !== "run").map((i) => [i.key, i]));
     actions = (Array.isArray(raw) ? raw : []).filter((a) => byKey.has(a?.key)).slice(0, 100).map((a) => ({ key: a.key, reason: clip(String(a.reason || ""), 200), title: byKey.get(a.key).title, project: proj0(o, byKey.get(a.key).projectKey), profile: byKey.get(a.key).profile }));
   } catch { /* no suggestions */ }
-  return { status: run.status, html: markdown(redactText(report)), actions, error: run.error, activity: run.activity };
+  return { status: run.status, html: renderMarkdown(redactText(report), { highlight: false }), actions, error: run.error, activity: run.activity };
 }
 const redactText = (t) => redact(t, engine.secretValues);
 
@@ -730,6 +730,8 @@ async function readJson(req) {
   try { return body ? JSON.parse(body) : {}; } catch { throw new HttpError(400, "bad json"); }
 }
 
+const MD_CSS = await readFile(path.join(HERE, "md.css"), "utf8");
+const REPORT_TOKENS = ":root{--bg:#f7f6f2;--surface:#fff;--sunk:#efede6;--ink:#1c1b18;--muted:#6a675f;--line:#e3e0d6;--accent:#b4481a;--accent-ink:#fff;--accent-soft:#fbece3;--run:#2c5fa5;--ok:#2b7344;--warn:#8a5b00}@media (prefers-color-scheme:dark){:root{--bg:#151513;--surface:#1e1e1b;--sunk:#272622;--ink:#efeee9;--muted:#a09d94;--line:#34332e;--accent:#e8905f;--accent-ink:#1a0f08;--accent-soft:#33221a;--run:#8db1ea;--ok:#78c794;--warn:#e0b75a}}";
 async function reportPage(run, file) {
   const dir = path.resolve(run.outputDir);
   const target = path.resolve(dir, file || run.result?.primary || "report.md");
@@ -737,9 +739,9 @@ async function reportPage(run, file) {
   const text = await readFile(target, "utf8").catch(() => { throw new HttpError(404, "File not found"); });
   const used = Object.entries(run.inputs || {}).map(([k, v]) => `${k}: ${typeof v === "object" ? `${v.from} to ${v.to}${v.previous ? ` (previous ${v.previous.from} to ${v.previous.to})` : ""}` : v}`).join(" · ");
   return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(run.workflowName)}</title>
-<style>:root{color-scheme:light dark}body{font:16px/1.6 system-ui,sans-serif;max-width:46rem;margin:0 auto;padding:2rem 1.25rem 4rem}a{color:#9a4a1f}header{font-size:13px;color:#777;margin-bottom:1.5rem}h1,h2,h3{line-height:1.25}table{border-collapse:collapse}td,th{border:1px solid #8884;padding:.3rem .6rem;text-align:left}pre{background:#8882;padding:.75rem;overflow:auto;border-radius:6px}code{background:#8882;padding:0 .25rem;border-radius:3px}</style>
+<style>${REPORT_TOKENS}${MD_CSS}:root{color-scheme:light dark}body{background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,sans-serif;max-width:46rem;margin:0 auto;padding:2rem 1.25rem 4rem}.md{font-size:16px}header a{color:var(--accent)}header{font-size:13px;color:var(--muted);margin-bottom:1.5rem}h1,h2,h3{line-height:1.25}table{border-collapse:collapse}td,th{border:1px solid #8884;padding:.3rem .6rem;text-align:left}pre{background:#8882;padding:.75rem;overflow:auto;border-radius:6px}code{background:#8882;padding:0 .25rem;border-radius:3px}</style>
 <header><a href="/#run=${esc(run.id)}">← ${esc(run.workflowName)}</a> · ${new Date(run.endedAt || run.createdAt).toLocaleString("en-GB")}${used ? `<br>${esc(used)}` : ""}</header>
-<main>${/\.md$/.test(target) ? markdown(text) : `<pre>${esc(text)}</pre>`}</main></html>`;
+<main>${/\.md$/.test(target) ? renderMarkdown(text, { highlight: false }) : `<pre>${esc(text)}</pre>`}</main></html>`;
 }
 
 const HOST = process.env.DASH_HOST || config.host || "127.0.0.1";
@@ -766,7 +768,7 @@ const server = http.createServer(async (req, res) => {
     const p = url.pathname;
     if (req.method === "GET") {
       if (p === "/") return send(200, "text/html; charset=utf-8", await readFile(path.join(HERE, "index.html")));
-      if (["/app.css", "/app.js", "/recap.css", "/recap.js", "/usage.css", "/usage.js", "/mdview.mjs"].includes(p)) return send(200, TYPES[path.extname(p)], await readFile(path.join(HERE, p)));
+      if (["/app.css", "/app.js", "/recap.css", "/recap.js", "/usage.css", "/usage.js", "/mdview.mjs", "/md.css"].includes(p)) return send(200, TYPES[path.extname(p)], await readFile(path.join(HERE, p)));
       if (p === "/api/notify") return json(notifyView());
       if (p === "/usage") return send(200, "text/html; charset=utf-8", await readFile(path.join(HERE, "usage.html")));
       if (p === "/api/usage") {
