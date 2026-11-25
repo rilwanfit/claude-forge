@@ -89,7 +89,7 @@ function renderStrip() {
   for (let i = 0; i < 7; i++) {
     const d0 = start.getTime() + i * DAY; const d = new Date(d0);
     const items = ups.filter((u) => { const x = new Date(u.at); x.setHours(0, 0, 0, 0); return x.getTime() === new Date(d0).setHours(0, 0, 0, 0); });
-    cols.push(`<div class="day${i === 0 ? " today" : ""}${items.length ? "" : " empty"}"><h3>${i === 0 ? "Today" : i === 1 ? "Tomorrow" : WD[d.getDay()]} <span class="nothing">${d.getDate()}</span></h3>${items.map((u) => `<button class="slot" data-act="wf" data-id="${u.workflowId}" data-focus="schedule" title="${esc(u.name)} · ${esc(proj(u.projectKey).name)}">${mark(u.projectKey, "sm")}<b>${hm(u.at)}</b><span>${esc(u.name)}</span></button>`).join("")}</div>`);
+    cols.push(`<div class="day${i === 0 ? " today" : ""}${items.length ? "" : " empty"}"><h3>${i === 0 ? "Today" : i === 1 ? "Tomorrow" : WD[d.getDay()]} <span class="nothing">${d.getDate()}</span></h3>${items.slice(0, 2).map((u) => `<button class="slot" data-act="wf" data-id="${u.workflowId}" data-focus="schedule" title="${esc(u.name)} · ${esc(proj(u.projectKey).name)}">${mark(u.projectKey, "sm")}<b>${hm(u.at)}</b><span>${esc(u.name)}</span></button>`).join("")}${items.length > 2 ? `<button class="slot more" data-act="scheduler" title="${esc(items.slice(2).map((u) => `${hm(u.at)} ${u.name}`).join(", "))}">+${items.length - 2} more</button>` : ""}</div>`);
   }
   $("#strip").innerHTML = `<div class="strip-head"><h2>Up next</h2><div class="health">${health}</div></div>` + (ups.length ? `<div class="days">${cols.join("")}</div>` : `<p class="nothing">${nextAny ? `Nothing in the next 7 days. Next: ${esc(nextAny.name)}, ${new Date(nextAny.next).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} ${hm(nextAny.next)}` : "No scheduled runs. Open a workflow to add a schedule."}</p>`);
 }
@@ -392,7 +392,7 @@ async function act(el) {
   const a = el.dataset.act, id = el.dataset.id;
   const guard = async (fn) => { if (el.disabled) return; el.disabled = true; try { await fn(); } catch (e) { toast(e.message); if (e.body?.runId) { /* already running */ } } finally { el.disabled = false; } };
   switch (a) {
-    case "project": sel = id; localStorage.setItem("project", sel); render(); break;
+    case "project": sel = id; localStorage.setItem("project", sel); render(); window.scrollTo(0, 0); break;
     case "close": closePanel(); break;
     case "ask": askLast = null; openPanel({ type: "ask" }); break;
     case "ask-quick": $("#ask-q").value = el.dataset.q; $("#ask-q").focus(); break;
