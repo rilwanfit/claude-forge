@@ -57,7 +57,7 @@ A maintainer reviews every PR. Expect questions and requests for changes. Answer
 
 ## Report a bug or ask for a feature
 
-Open an issue and fill in the template. To report a security problem, do not open an issue. Follow `SECURITY.md`.
+Check the [FAQ](FAQ.md) first. Open an issue and fill in the template. To report a security problem, do not open an issue. Follow `SECURITY.md`.
 
 ## Code of conduct
 
