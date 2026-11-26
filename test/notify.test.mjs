@@ -35,3 +35,25 @@ test("remote channels get generic text by default and the real text only when as
   assert.match(calls[0].init.body, /secret-project/);
   await makeDeliver({ webhook: "https://down.example" }, { post, run, platform: "linux" })(m); // must not throw
 });
+
+test("macOS: terminal-notifier opens the dashboard on click; without it, osascript is the fallback", async () => {
+  const m = { title: "Needs approval · shop", body: "-rf scary", generic: { title: "Claude needs you", body: "Needs approval" } };
+  const calls = [];
+  const have = (cmd, args, cb) => { calls.push([cmd, args]); cb(null); };
+  await makeDeliver({}, { run: have, platform: "darwin", clickUrl: "http://127.0.0.1:4777" })(m);
+  assert.deepEqual(calls.map((c) => c[0]), ["terminal-notifier"]);
+  const a = calls[0][1];
+  assert.deepEqual(a.slice(0, 2), ["-title", "Needs approval · shop"]);
+  assert.equal(a[a.indexOf("-message") + 1], " -rf scary", "a body starting with - is not read as an option");
+  assert.equal(a[a.indexOf("-open") + 1], "http://127.0.0.1:4777");
+
+  calls.length = 0;
+  const missing = (cmd, args, cb) => { calls.push([cmd, args]); cb(cmd === "terminal-notifier" ? Object.assign(new Error("spawn terminal-notifier ENOENT"), { code: "ENOENT" }) : null); };
+  await makeDeliver({}, { run: missing, platform: "darwin", clickUrl: "http://127.0.0.1:4777" })(m);
+  assert.deepEqual(calls.map((c) => c[0]), ["terminal-notifier", "osascript"]);
+
+  calls.length = 0; // the webhook still gets the public URL only, never the localhost click URL
+  const bodies = []; const post = async (u, init) => bodies.push(JSON.parse(init.body));
+  await makeDeliver({ webhook: "https://hook.example/x", desktop: false }, { run: have, post, platform: "darwin", clickUrl: "http://127.0.0.1:4777" })(m);
+  assert.equal(bodies[0].url, undefined); assert.equal(calls.length, 0, "desktop off: no popup");
+});

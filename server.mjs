@@ -865,7 +865,7 @@ const notifyCfg = () => { // config.json plus the phone-push topic you set up in
   const topic = saved.notify?.ntfyTopic;
   return { ...base, ...(topic ? { ntfy: { server: base.ntfy?.server || saved.notify?.server, topic } } : {}) };
 };
-const deliverNow = (m) => makeDeliver(notifyCfg(), { publicUrl: config.publicUrl || "" })(m);
+const deliverNow = (m) => makeDeliver(notifyCfg(), { publicUrl: config.publicUrl || "", clickUrl: config.publicUrl || `http://127.0.0.1:${config.port}` })(m);
 if (!NOTIFY_OFF) {
   const notifier = new Notifier({ events: notifyCfg().events || DEFAULT_EVENTS, deliver: deliverNow, projectName: (i) => projectOf(i.projectKey)?.name || "" });
   setInterval(async () => { try { await notifier.observe((await overview()).needs); } catch { /* next tick */ } }, 5000);

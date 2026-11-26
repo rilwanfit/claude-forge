@@ -154,7 +154,7 @@ The hook (`hooks/dashboard-hook.mjs`) appends one short line per event (`Session
 
 You are told when something new needs you: a permission request (needs hooks, see above), a question a session asked, a run waiting for review, or a failed run. The first pass after a start only learns what is already there, so a restart never replays old items. Nothing is sent for pull requests, issues or checklists.
 
-- **Desktop** (on by default): `notify-send` on Linux, `osascript` on macOS. Stays on this machine and shows the real text.
+- **Desktop** (on by default): `notify-send` on Linux, `terminal-notifier` or `osascript` on macOS. Stays on this machine and shows the real text. On macOS a click on an `osascript` notification opens Script Editor, so install `terminal-notifier` (`brew install terminal-notifier`): then a click opens the dashboard. `./install-service.sh` offers to install the helper for your OS, shows the command first and installs nothing without your yes (`-y` accepts).
 - **Your phone, in one click**: press **Notifications** at the top of the page, then **Set up phone alerts**. It creates a private topic (kept in `state.json`, never in git) and shows what to do: install the free [ntfy](https://ntfy.sh) app, subscribe to the topic, press **Send test**. Nothing is sent until you do this, because alerts pass through ntfy.sh, a third party; they carry only "Claude needs you", never project names or text.
 - **Phone or chat, by hand**: add a webhook or an [ntfy](https://ntfy.sh) topic in `config.json`:
   ```json
