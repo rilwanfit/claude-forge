@@ -751,6 +751,18 @@ const TOKEN = process.env.DASH_TOKEN || config.token || "";
 const tokenOk = (t) => { const a = crypto.createHash("sha256").update(t).digest(), b = crypto.createHash("sha256").update(TOKEN).digest(); return crypto.timingSafeEqual(a, b); };
 if (EXPOSED && TOKEN.length < 16) { console.error(`Refusing to listen on ${HOST}: this dashboard shows session text and can start Claude runs, so a network-visible instance needs an access token of at least 16 characters (DASH_TOKEN env var or "token" in config.json). Generate one with: openssl rand -hex 24`); process.exit(1); }
 
+// Pairing a nearby phone: the page shows a QR code that holds a one-time link, not the access token.
+// The link works once and for two minutes. Opening it on the phone sets the same login cookie as /?token=...
+const PAIR_TTL = Number(process.env.DASH_PAIR_TTL_MS) || 120_000; const pairCodes = new Map(); // code -> expiry time
+const prunePairs = () => { const now = Date.now(); for (const [c, t] of pairCodes) if (t < now) pairCodes.delete(c); };
+const pairBases = () => {
+  if (config.publicUrl) return [String(config.publicUrl).replace(/\/$/, "")];
+  if (!["0.0.0.0", "::"].includes(HOST)) return [`http://${HOST}:${config.port}`];
+  return Object.values(os.networkInterfaces()).flat().filter((i) => i && i.family === "IPv4" && !i.internal).map((i) => `http://${i.address}:${config.port}`);
+};
+const pairView = () => ({ exposed: EXPOSED, ttlSeconds: PAIR_TTL / 1000, addresses: EXPOSED ? pairBases() : [] });
+const loginCookie = () => `dash_token=${encodeURIComponent(TOKEN)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=31536000`;
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, "http://localhost");
   const send = (code, type, body, extra = {}) => { res.writeHead(code, { "content-type": type, "cache-control": "no-store", "x-content-type-options": "nosniff", ...extra }); res.end(body); };
@@ -758,6 +770,11 @@ const server = http.createServer(async (req, res) => {
   // Only this page may call the API: a page on another site cannot read the transcripts or start runs through the browser.
   const host = req.headers.host || "";
   if (!EXPOSED && !/^(127\.0\.0\.1|localhost):\d+$/.test(host)) return send(403, "text/plain", "forbidden");
+  if (EXPOSED && req.method === "GET" && url.pathname === "/pair") { // the phone has no cookie yet, so this comes before the token check
+    prunePairs(); const code = url.searchParams.get("code") || ""; const ok = pairCodes.has(code); pairCodes.delete(code); // single use
+    if (!ok) return send(410, "text/plain", "This pairing link has expired or was already used. Create a new one in the dashboard on your computer.");
+    return send(302, "text/plain", "", { location: "/", "set-cookie": loginCookie() });
+  }
   if (EXPOSED) { // reachable from the network: every request needs the access token (header, or the cookie set by visiting /?token=...)
     const cookie = /(?:^|;\s*)dash_token=([^;]+)/.exec(req.headers.cookie || "")?.[1];
     const given = req.headers.authorization?.replace(/^Bearer\s+/i, "") || url.searchParams.get("token") || (cookie && decodeURIComponent(cookie));
@@ -769,9 +786,10 @@ const server = http.createServer(async (req, res) => {
     const p = url.pathname;
     if (req.method === "GET") {
       if (p === "/") return send(200, "text/html; charset=utf-8", await readFile(path.join(HERE, "index.html")));
-      if (["/app.css", "/app.js", "/recap.css", "/recap.js", "/usage.css", "/usage.js", "/mdview.mjs", "/toast.mjs", "/md.css"].includes(p)) return send(200, TYPES[path.extname(p)], await readFile(path.join(HERE, p)));
+      if (["/app.css", "/app.js", "/recap.css", "/recap.js", "/usage.css", "/usage.js", "/mdview.mjs", "/qr.mjs", "/toast.mjs", "/md.css"].includes(p)) return send(200, TYPES[path.extname(p)], await readFile(path.join(HERE, p)));
       if (p === "/api/notify") return json(notifyView());
       if (p === "/api/update") return json(updateView);
+      if (p === "/api/pair") return json(pairView());
       if (p === "/usage") return send(200, "text/html; charset=utf-8", await readFile(path.join(HERE, "usage.html")));
       if (p === "/api/usage") {
         const days = Math.min(90, Math.max(1, Number(url.searchParams.get("days")) || 30)); const only = url.searchParams.get("project");
@@ -808,6 +826,12 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST") {
       const body = await readJson(req);
       let m;
+      if (p === "/api/pair") {
+        if (!EXPOSED) throw new HttpError(409, "Pairing needs network access. Restart with DASH_HOST=0.0.0.0 and DASH_TOKEN set (or host and token in config.json). See the README.");
+        prunePairs(); while (pairCodes.size >= 10) pairCodes.delete(pairCodes.keys().next().value);
+        const code = crypto.randomBytes(24).toString("base64url"); const expiresAt = Date.now() + PAIR_TTL; pairCodes.set(code, expiresAt);
+        return json({ expiresAt, ttlSeconds: PAIR_TTL / 1000, links: pairBases().map((b) => `${b}/pair?code=${code}`) }, 201);
+      }
       if (p === "/api/notify/phone") {
         if (NOTIFY_OFF) throw new HttpError(409, 'Notifications are turned off in config.json ("notify": false).');
         const action = String(body.action || "");

@@ -62,6 +62,10 @@ Replace `com.apple.Terminal` with the bundle id of your terminal app. A click th
 
 Claude Forge uses `notify-send`. Install it with your package manager (`libnotify-bin` on Debian and Ubuntu, `libnotify` on Fedora and Arch). `./install-service.sh` offers this. On WSL there is no desktop to notify.
 
+### Can I connect a nearby phone with Bluetooth or NFC?
+
+No. Node.js has no built-in Bluetooth, a Mac cannot send NFC, and a phone browser cannot receive alerts over either. Use a QR code instead: set a host and token (see "Reaching it from other devices" in the README), open **Notifications**, and press **Show QR code**. The phone camera opens a one-time link that logs the phone in over your Wi-Fi. No account and no outside service are involved. For alerts when the page is closed, use the ntfy phone alerts, which can use your own ntfy server (`"ntfy": { "server": "http://..." }` in `config.json`).
+
 ### How do I turn notifications off?
 
 Set `"desktop": false` inside `"notify"` in `config.json` for the desktop popup, or `"notify": false` for everything. See the Notifications section of the README.

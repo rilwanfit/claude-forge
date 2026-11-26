@@ -230,3 +230,5 @@ details.sec > summary { cursor: pointer; font-weight: 600; color: var(--muted); 
 .update-head { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; }
 .update ul { margin: 6px 0 0 18px; padding: 0; color: var(--muted); }
 .update code { background: var(--sunk); padding: 1px 5px; border-radius: 4px; }
+.qr { display: inline-block; background: #fff; padding: 8px; border-radius: 8px; line-height: 0; margin: 4px 0 8px; border: 1px solid var(--line); }
+.qr svg { display: block; max-width: 100%; height: auto; }

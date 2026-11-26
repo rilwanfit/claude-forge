@@ -1,6 +1,7 @@
 // Dashboard UI: sidebar, overview, schedule strip, workflow library and a detail panel. No build step.
 import { renderMarkdown } from "/mdview.mjs";
 import { toast } from "/toast.mjs";
+import { qrSvg } from "/qr.mjs";
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const clip = (s, n) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s);
@@ -200,7 +201,7 @@ function openPanel(p) {
   renderPanel(); $("#panel").focus({ preventScroll: true }); requestAnimationFrame(() => { $("#panel").scrollTop = 0; if (p.focus) $("#panel").querySelector(`[data-section="${p.focus}"]`)?.scrollIntoView({ block: "start" }); });
 }
 function closePanel() {
-  if (!panel) return; panel = null; runData = null;
+  if (!panel) return; panel = null; runData = null; stopPair();
   $("#panel").hidden = true; $("#scrim").hidden = true; history.replaceState(null, "", location.pathname + location.search);
   (opener && document.contains(opener) ? opener : $("#main")).focus?.({ preventScroll: true }); // scroll position stays where it was
   schedulePoll();
@@ -218,9 +219,37 @@ function renderPanel() {
 }
 
 // ---- notifications
+// Pair a nearby phone: a QR code that holds a one-time link (not the access token). It works once, for two minutes.
+let pairing = null, pairTimer = null;
+const clock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+function stopPair() { clearInterval(pairTimer); pairTimer = null; pairing = null; }
+function pairHtml(info) {
+  if (!info.exposed) return `<p>Scan a QR code to open this dashboard on a phone that is on the same Wi-Fi. That needs network access, which is off by default: only this computer can reach the dashboard.</p>
+    <p class="hint">To turn it on, restart with a host and an access token:</p>
+    <pre style="margin:0 0 8px;white-space:pre-wrap;overflow-wrap:anywhere"><code>DASH_HOST=0.0.0.0 DASH_TOKEN=$(openssl rand -hex 24) node server.mjs</code></pre>
+    <p class="hint">Or set <code>host</code> and <code>token</code> in config.json. There is no encryption, so use it only on a network you trust. See “Reaching it from other devices” in the README.</p>`;
+  return `<p>Open this dashboard on a phone on the same Wi-Fi by scanning a QR code. No account and no outside service.</p>
+    <div class="inline"><button class="btn primary" data-act="pair-go">Show QR code</button></div><div id="pair-out"></div>
+    <p class="hint">The code works once, for ${info.ttlSeconds / 60} minutes, and it does not contain your access token. Whoever scans it gets full access: they can read your session text and start Claude runs. There is no encryption, so use it only on a network you trust.</p>`;
+}
+function renderPair() {
+  const out = $("#pair-out"); if (!out || !pairing) return;
+  const link = pairing.links[pairing.i]; const left = Math.max(0, Math.round((pairing.expiresAt - Date.now()) / 1000));
+  if (!link) { out.innerHTML = `<p class="err">No network address found. Connect to Wi-Fi, or set <code>publicUrl</code> in config.json.</p>`; stopPair(); return; }
+  if (left <= 0) { out.innerHTML = `<p class="hint">The code expired. Press <b>Show QR code</b> for a new one.</p>`; stopPair(); return; }
+  let svg = ""; try { svg = `<div class="qr">${qrSvg(link, { scale: 5, label: "QR code to open this dashboard on your phone" })}</div>`; } catch { svg = `<p class="err">This link is too long for a QR code. Type it on the phone instead.</p>`; }
+  const picks = pairing.links.length > 1 ? `<p class="hint">Address: ${pairing.links.map((l, i) => `<button class="btn" data-act="pair-pick" data-i="${i}" ${i === pairing.i ? "disabled" : ""}>${esc(new URL(l).hostname)}</button>`).join(" ")}</p>` : "";
+  out.innerHTML = `${svg}<p class="hint">Scan it with the phone camera. Expires in <b id="pair-left">${clock(left)}</b>.</p>${picks}<p class="hint">Or type: <code style="user-select:all;overflow-wrap:anywhere">${esc(link)}</code></p>`;
+}
+function tickPair() {
+  if (panel?.type !== "notify" || !pairing) { stopPair(); return; }
+  const left = Math.max(0, Math.round((pairing.expiresAt - Date.now()) / 1000));
+  if (left <= 0) renderPair(); else { const b = $("#pair-left"); if (b) b.textContent = clock(left); }
+}
+
 async function loadNotify(fresh) {
   try {
-    const n = fresh || await api("/api/notify"); if (panel?.type !== "notify") return;
+    const [n, pairInfo] = await Promise.all([fresh || api("/api/notify"), api("/api/pair")]); if (panel?.type !== "notify") return;
     const url = n.phone.on ? `${n.phone.server}/${n.phone.topic}` : "";
     const kinds = { approval: "a permission waiting for your approval", question: "a question a session asked you", review: "a run waiting for your review", failed: "a failed run" };
     $("#panel").innerHTML = head("Notifications", n.disabled ? `<span class="chip mute">Off in config.json</span>` : `<span class="chip ok">${sym("i-check")}On</span>`) + `<div class="pbody">
@@ -235,7 +264,9 @@ async function loadNotify(fresh) {
         <p>Get an alert on your phone when something needs you, even when you are away from this computer. One click creates a private topic; you subscribe to it in the free ntfy app.</p>
         <p class="hint">Nothing is sent until you set this up. Alerts carry only “Claude needs you”, never project names or text, and they pass through ntfy.sh (or your own server).</p>
         <div class="inline"><button class="btn primary" data-act="notify-on" ${n.disabled ? "disabled" : ""}>Set up phone alerts</button></div>`}</div>
+      <div class="sec"><h3>A nearby phone</h3>${pairHtml(pairInfo)}</div>
       <p class="hint">Change what is sent or turn everything off with <code>notify</code> in config.json.</p></div>`;
+    if (pairing) renderPair();
   } catch (e) { $("#panel").innerHTML = head("Notifications", "") + `<div class="pbody"><p class="err">${esc(e.message)}</p></div>`; }
 }
 
@@ -426,6 +457,8 @@ async function act(el) {
     case "notify": openPanel({ type: "notify" }); break;
     case "notify-on": return guard(async () => { await loadNotify(await api("/api/notify/phone", { action: "enable" })); toast("Phone alerts are on. Subscribe in the ntfy app."); });
     case "notify-off": return guard(async () => { await loadNotify(await api("/api/notify/phone", { action: "disable" })); toast("Phone alerts are off"); });
+    case "pair-go": return guard(async () => { const j = await api("/api/pair", {}); pairing = { links: j.links, expiresAt: j.expiresAt, i: 0 }; renderPair(); clearInterval(pairTimer); pairTimer = setInterval(tickPair, 1000); });
+    case "pair-pick": if (pairing) { pairing.i = Number(el.dataset.i); renderPair(); } break;
     case "notify-test": return guard(async () => { await api("/api/notify/phone", { action: "test" }); toast("Test sent"); });
     case "pick": { const o = panel?.item?.options?.[Number(el.dataset.i)]; if (!o) break; $("#reply-text").value = o.value; document.querySelectorAll("#panel .opt").forEach((b) => b.setAttribute("aria-pressed", String(b === el))); $("#reply-text").focus(); break; }
     case "pick-open": { const it = allItems().find((i) => i.id === id); if (!it) break; openPanel({ type: "session", item: it }); const o = it.options?.[Number(el.dataset.i)]; if (o) { $("#reply-text").value = o.value; document.querySelectorAll("#panel .opt")[Number(el.dataset.i)]?.setAttribute("aria-pressed", "true"); } $("#panel [data-section=reply]")?.scrollIntoView({ block: "center" }); break; }
