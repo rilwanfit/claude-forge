@@ -769,7 +769,7 @@ const server = http.createServer(async (req, res) => {
     const p = url.pathname;
     if (req.method === "GET") {
       if (p === "/") return send(200, "text/html; charset=utf-8", await readFile(path.join(HERE, "index.html")));
-      if (["/app.css", "/app.js", "/recap.css", "/recap.js", "/usage.css", "/usage.js", "/mdview.mjs", "/md.css"].includes(p)) return send(200, TYPES[path.extname(p)], await readFile(path.join(HERE, p)));
+      if (["/app.css", "/app.js", "/recap.css", "/recap.js", "/usage.css", "/usage.js", "/mdview.mjs", "/toast.mjs", "/md.css"].includes(p)) return send(200, TYPES[path.extname(p)], await readFile(path.join(HERE, p)));
       if (p === "/api/notify") return json(notifyView());
       if (p === "/api/update") return json(updateView);
       if (p === "/usage") return send(200, "text/html; charset=utf-8", await readFile(path.join(HERE, "usage.html")));

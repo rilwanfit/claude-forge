@@ -1,5 +1,6 @@
 // Recap page: where did I leave off, who did the work, what can I resume, rerun or reuse.
 import { renderMarkdown } from "/mdview.mjs";
+import { toast } from "/toast.mjs";
 // All transcript text is DATA: it is only ever inserted escaped, never as HTML, and never acted on.
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -18,8 +19,6 @@ async function api(path, body) {
   if (!r.ok) throw Object.assign(new Error(j.error || `Request failed (${r.status})`), { status: r.status, body: j });
   return j;
 }
-let toastTimer;
-function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 3200); }
 
 function ago(ts) {
   if (!ts) return "unknown time";
@@ -129,7 +128,7 @@ async function runSearch() {
   query = $("#q").value.trim();
   if (!query) { results = null; render(); return; }
   const project = scope === "all" ? "all" : currentProject();
-  try { results = await api(`/api/recap/search?q=${encodeURIComponent(query)}&project=${encodeURIComponent(project)}`); } catch (e) { toast(e.message); return; }
+  try { results = await api(`/api/recap/search?q=${encodeURIComponent(query)}&project=${encodeURIComponent(project)}`); } catch (e) { toast(e.message, { error: true }); return; }
   render();
 }
 
@@ -275,7 +274,7 @@ async function openRerun(wfId) {
 // ---------------------------------------------------------------- actions
 async function act(el) {
   const a = el.dataset.act, key = el.dataset.key;
-  const guard = async (fn) => { if (el.disabled) return; el.disabled = true; try { await fn(); } catch (e) { toast(e.message); const o = $("#rr-err") || $("#h-err"); if (o && panel) o.textContent = e.message; } finally { el.disabled = false; } };
+  const guard = async (fn) => { if (el.disabled) return; el.disabled = true; try { await fn(); } catch (e) { toast(e.message, { error: true }); const o = $("#rr-err") || $("#h-err"); if (o && panel) o.textContent = e.message; } finally { el.disabled = false; } };
   switch (a) {
     case "close": return closePanel();
     case "project": sel = key; localStorage.setItem("recap.project", sel); if (scope === "project" && query) await runSearch(); render(); return;
@@ -311,7 +310,7 @@ async function act(el) {
       const holder = el.parentElement; let box = holder.querySelector(":scope > pre.raw[data-ev]");
       if (box) { box.remove(); return; }
       try { const j = await api(`/api/recap/event?key=${encodeURIComponent(key)}&f=${encodeURIComponent(el.dataset.f)}&off=${encodeURIComponent(el.dataset.off)}`); el.insertAdjacentHTML("afterend", `<pre class="raw" data-ev="1">${esc(j.text)}</pre>`); }
-      catch (e) { toast(e.message); }
+      catch (e) { toast(e.message, { error: true }); }
     }
   }
 }
