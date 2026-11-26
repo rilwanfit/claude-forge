@@ -496,7 +496,20 @@ $("#new-wf").addEventListener("click", () => act({ dataset: { act: "new" } }));
 document.addEventListener("visibilitychange", () => { if (!document.hidden) load().catch(() => {}); });
 setInterval(() => { if (panel?.type === "run" && runData && ["running", "queued"].includes(runData.run.status) && !editingInPanel()) refreshRunPanel(); }, 2000);
 
+// Update notice: the server checks GitHub once a day. Shown until you dismiss this particular update.
+async function showUpdate() {
+  const u = await api("/api/update").catch(() => null); const box = $("#update");
+  if (!u?.available) { box.hidden = true; return; }
+  let seen = ""; try { seen = localStorage.getItem("update-dismissed") || ""; } catch { /* private mode */ }
+  if (seen === u.latest) { box.hidden = true; return; }
+  const list = (u.changes || []).map((c) => `<li>${esc(c)}</li>`).join("");
+  box.innerHTML = `<div class="update-head"><div><strong>Update available</strong>: ${u.behind} new change${u.behind === 1 ? "" : "s"} on main. ${u.diverged ? "You have local commits, so run <code>git pull --rebase</code> yourself." : "Run <code>./update.sh</code> in the folder you cloned into."} <a href="${esc(u.url)}" target="_blank" rel="noopener">See what changed</a></div><button class="btn" type="button" id="update-x">Dismiss</button></div>${list ? `<ul>${list}</ul>` : ""}`;
+  box.hidden = false;
+  $("#update-x").addEventListener("click", () => { try { localStorage.setItem("update-dismissed", u.latest); } catch { /* ignore */ } box.hidden = true; });
+}
+
 await load();
+showUpdate();
 const m = /^#(run|wf)=(\w+)$/.exec(location.hash);
 if (m) { openPanel({ type: m[1], id: m[2] }); if (m[1] === "wf") fillWfHist(m[2]); }
 // From the recap page: "Save as workflow" opens the form pre-filled; nothing is saved until you press Save.

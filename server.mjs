@@ -23,6 +23,7 @@ import { fetchSource } from "./lib/sources.mjs";
 import { fetchPeer } from "./lib/peers.mjs";
 import { Replies, BASE_TOOLS as REPLY_BASE } from "./lib/reply.mjs";
 import { Notifier, makeDeliver, DEFAULT_EVENTS } from "./lib/notify.mjs";
+import { checkForUpdate, makeGet, API as UPDATE_API } from "./lib/update.mjs";
 
 const run = promisify(execFile);
 const HERE = path.dirname(new URL(import.meta.url).pathname);
@@ -770,6 +771,7 @@ const server = http.createServer(async (req, res) => {
       if (p === "/") return send(200, "text/html; charset=utf-8", await readFile(path.join(HERE, "index.html")));
       if (["/app.css", "/app.js", "/recap.css", "/recap.js", "/usage.css", "/usage.js", "/mdview.mjs", "/md.css"].includes(p)) return send(200, TYPES[path.extname(p)], await readFile(path.join(HERE, p)));
       if (p === "/api/notify") return json(notifyView());
+      if (p === "/api/update") return json(updateView);
       if (p === "/usage") return send(200, "text/html; charset=utf-8", await readFile(path.join(HERE, "usage.html")));
       if (p === "/api/usage") {
         const days = Math.min(90, Math.max(1, Number(url.searchParams.get("days")) || 30)); const only = url.searchParams.get("project");
@@ -869,6 +871,20 @@ if (!NOTIFY_OFF) {
   setInterval(async () => { try { await notifier.observe((await overview()).needs); } catch { /* next tick */ } }, 5000);
 }
 const notifyView = () => { const c = notifyCfg(); return { disabled: NOTIFY_OFF, desktop: !NOTIFY_OFF && c.desktop !== false, platform: process.platform, events: c.events || DEFAULT_EVENTS, phone: c.ntfy?.topic ? { on: true, topic: c.ntfy.topic, server: (c.ntfy.server || "https://ntfy.sh").replace(/\/$/, ""), fromConfig: !saved.notify?.ntfyTopic } : { on: false }, includeText: !!c.includeText }; };
+// Update notice: once a day, ask GitHub whether the public main branch has commits this checkout lacks. Off with "updateCheck": false.
+const UPDATE_ON = config.updateCheck !== false && process.env.DASH_UPDATE_CHECK !== "0";
+let updateView = { enabled: UPDATE_ON, available: false };
+const gitHead = () => run("git", ["-C", HERE, "rev-parse", "HEAD"]).then((r) => r.stdout.trim()).catch(() => null);
+const updateGet = makeGet(process.env.DASH_UPDATE_API || UPDATE_API);
+const updateTick = async () => {
+  try {
+    const r = await checkForUpdate({ head: gitHead, get: updateGet });
+    const first = !updateView.available;
+    updateView = { enabled: true, available: false, ...(r || {}) };
+    if (r?.available && first) console.log(`Update available: ${r.behind} new commit${r.behind === 1 ? "" : "s"} on main. Run ./update.sh`);
+  } catch { /* next day */ }
+};
+if (UPDATE_ON) { updateTick(); setInterval(updateTick, DAY).unref(); }
 // Hook events arrive instantly; refresh within a few seconds instead of waiting for the minute tick.
 let lastQuick = 0;
 setInterval(async () => { try { const at = eventLog.pos; const st = await stat(EVENTS_FILE).catch(() => null); if (st && st.size !== at && Date.now() - lastQuick > 4000) { lastQuick = Date.now(); await rebuild(); } } catch { /* next tick */ } }, 2000);

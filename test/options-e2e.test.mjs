@@ -20,7 +20,7 @@ before(async () => {
   const f = path.join(dir, ID + ".jsonl"); await writeFile(f, lines.map((l) => JSON.stringify(l)).join("\n") + "\n");
   const old = new Date(Date.now() - 600_000); await utimes(f, old, old);
   await writeFile(path.join(tmp, "config.json"), JSON.stringify({ port: PORT, profiles: [{ name: "p", dir: prof }], githubOwners: [], inputFiles: [], refreshSeconds: 600, githubRefreshSeconds: 600, notify: false }));
-  srv = spawn("node", [path.join(HERE, "../server.mjs")], { env: { ...process.env, PORT, DASH_CONFIG: path.join(tmp, "config.json"), DASH_DATA: path.join(tmp, "data"), DASH_STATE: path.join(tmp, "state.json"), DASH_EVENTS: path.join(tmp, "e.jsonl") }, stdio: "ignore" });
+  srv = spawn("node", [path.join(HERE, "../server.mjs")], { env: { ...process.env, DASH_UPDATE_CHECK: "0", PORT, DASH_CONFIG: path.join(tmp, "config.json"), DASH_DATA: path.join(tmp, "data"), DASH_STATE: path.join(tmp, "state.json"), DASH_EVENTS: path.join(tmp, "e.jsonl") }, stdio: "ignore" });
   await until(() => fetch(base + "/api/overview").then((r) => r.ok).catch(() => false));
 });
 after(() => srv.kill("SIGTERM"));

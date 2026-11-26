@@ -23,7 +23,7 @@ before(async () => {
   ];
   await writeFile(path.join(dir, "bbbbbbbb-0000-4000-8000-000000000001.jsonl"), lines.map((l) => JSON.stringify(l)).join("\n") + "\n");
   await writeFile(path.join(tmp, "config.json"), JSON.stringify({ port: PORT, profiles: [{ name: "p", dir: prof }], githubOwners: [], inputFiles: [], refreshSeconds: 600, githubRefreshSeconds: 600 }));
-  srv = spawn("node", [path.join(HERE, "../server.mjs")], { env: { ...process.env, PORT, DASH_CONFIG: path.join(tmp, "config.json"), DASH_DATA: path.join(tmp, "data"), DASH_STATE: path.join(tmp, "state.json"), DASH_EVENTS: path.join(tmp, "e.jsonl") }, stdio: "ignore" });
+  srv = spawn("node", [path.join(HERE, "../server.mjs")], { env: { ...process.env, DASH_UPDATE_CHECK: "0", PORT, DASH_CONFIG: path.join(tmp, "config.json"), DASH_DATA: path.join(tmp, "data"), DASH_STATE: path.join(tmp, "state.json"), DASH_EVENTS: path.join(tmp, "e.jsonl") }, stdio: "ignore" });
   await until(() => fetch(`http://127.0.0.1:${PORT}/api/overview`).then((r) => r.ok).catch(() => false));
 });
 after(() => srv.kill("SIGTERM"));
