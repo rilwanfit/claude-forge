@@ -26,6 +26,7 @@
   "githubRefreshSeconds": 300,
   "defaultProfile": "default",
   "claudeBin": "claude",
+  "updateCheck": true,
   "maxConcurrent": 2,
   "catchUpWindowHours": 12,
   "secretEnv": [

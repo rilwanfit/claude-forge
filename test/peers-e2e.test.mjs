@@ -18,7 +18,7 @@ before(async () => {
   await new Promise((r) => peer.listen(0, "127.0.0.1", r));
   tmp = await mkdtemp(path.join(tmpdir(), "pe-"));
   await writeFile(path.join(tmp, "config.json"), JSON.stringify({ port: PORT, profiles: [], githubOwners: [], inputFiles: [], refreshSeconds: 600, githubRefreshSeconds: 600, notify: false, peers: [{ name: "work-pc", url: `http://127.0.0.1:${peer.address().port}`, tokenEnv: "WORKPC_TOKEN" }, { name: "offline-box", url: "http://127.0.0.1:1" }] }));
-  srv = spawn("node", [path.join(HERE, "../server.mjs")], { env: { ...process.env, WORKPC_TOKEN: "s3cret", PORT, DASH_CONFIG: path.join(tmp, "config.json"), DASH_DATA: path.join(tmp, "data"), DASH_STATE: path.join(tmp, "state.json"), DASH_EVENTS: path.join(tmp, "e.jsonl") }, stdio: "ignore" });
+  srv = spawn("node", [path.join(HERE, "../server.mjs")], { env: { ...process.env, DASH_UPDATE_CHECK: "0", WORKPC_TOKEN: "s3cret", PORT, DASH_CONFIG: path.join(tmp, "config.json"), DASH_DATA: path.join(tmp, "data"), DASH_STATE: path.join(tmp, "state.json"), DASH_EVENTS: path.join(tmp, "e.jsonl") }, stdio: "ignore" });
   await until(() => fetch(base + "/api/overview").then((r) => r.ok).catch(() => false));
 });
 after(() => { srv.kill("SIGTERM"); peer.close(); });

@@ -15,7 +15,7 @@ const runOf = async (id) => (await api(`/api/runs/${id}`)).json;
 const waitStatus = (id, s) => until(async () => { const r = (await runOf(id)).run; return [].concat(s).includes(r.status) ? r : null; });
 
 async function start() {
-  srv = spawn("node", [path.join(HERE, "../server.mjs")], { env: { ...process.env, PORT, DASH_CONFIG: path.join(tmp, "config.json"), DASH_DATA: path.join(tmp, "data"), DASH_STATE: path.join(tmp, "state.json"), DASH_CLAUDE_BIN: path.join(HERE, "fake-claude.mjs"), DASH_TICK_MS: "300" }, stdio: "inherit" });
+  srv = spawn("node", [path.join(HERE, "../server.mjs")], { env: { ...process.env, DASH_UPDATE_CHECK: "0", PORT, DASH_CONFIG: path.join(tmp, "config.json"), DASH_DATA: path.join(tmp, "data"), DASH_STATE: path.join(tmp, "state.json"), DASH_CLAUDE_BIN: path.join(HERE, "fake-claude.mjs"), DASH_TICK_MS: "300" }, stdio: "inherit" });
   await until(async () => fetch(base() + "/api/overview").then((r) => r.ok).catch(() => false), 15000);
 }
 const stopServer = () => new Promise((r) => { srv.once("exit", r); srv.kill("SIGTERM"); });

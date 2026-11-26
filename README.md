@@ -103,6 +103,16 @@ The script detects your OS: macOS gets a launchd agent (log: `~/Library/Logs/cla
 
 Stop it with `launchctl bootout gui/$(id -u)/com.claude-forge` (macOS) or `systemctl --user disable --now claude-forge` (Linux).
 
+## Updating
+
+```sh
+./update.sh
+```
+
+It fetches the latest commits, shows what is new, fast-forwards your checkout and restarts the service if you installed one. It never discards your changes: if your clone has local commits or edits that block the update, it stops and tells you what to do.
+
+Once a day the server asks GitHub whether `main` has commits you do not have. If it does, a banner appears at the top of the page with the list of changes and a Dismiss button. The check sends one anonymous request to `api.github.com` that contains the commit id of your checkout and nothing else. Turn it off with `"updateCheck": false` in `config.json`. It does nothing when the folder is not a git checkout.
+
 ## Reaching it from other devices
 
 By default only this machine can connect. To open it from your phone or another computer, set a host and a token:
@@ -115,7 +125,7 @@ DASH_HOST=0.0.0.0 DASH_TOKEN=$(openssl rand -hex 24) node server.mjs
 
 ## Privacy
 
-Unless you set a host (above), it listens on 127.0.0.1 only and refuses requests for any other host name, so other sites in your browser cannot read it. Nothing is sent anywhere except `gh` calls to your own repositories. It reads transcripts but never writes to them, and it never reads `~/.claude-secrets` or `.env` files. Snippets of your sessions show on the page, so only expose it with a token on a network you trust.
+Unless you set a host (above), it listens on 127.0.0.1 only and refuses requests for any other host name, so other sites in your browser cannot read it. Nothing is sent anywhere except `gh` calls to your own repositories and the daily update check (see Updating). It reads transcripts but never writes to them, and it never reads `~/.claude-secrets` or `.env` files. Snippets of your sessions show on the page, so only expose it with a token on a network you trust.
 
 ## Settings (`config.json`)
 

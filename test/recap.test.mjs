@@ -19,7 +19,7 @@ const launches = async (min = 0) => until(async () => { const l = (await readFil
 before(async () => {
   tmp = await mkdtemp(path.join(tmpdir(), "recap-")); fx = makeFixtures(tmp); log = path.join(tmp, "term.log");
   await writeFile(path.join(tmp, "config.json"), JSON.stringify({ port: PORT, profiles: [{ name: "fixture", dir: fx.profileDir }], defaultProfile: "fixture", terminal: [path.join(HERE, "fake-term.mjs")], sessionDays: 21, doneDays: 14, githubOwners: [], inputLabels: [], inputFiles: [], extraRepos: [], hideProjects: [], refreshSeconds: 600, githubRefreshSeconds: 600, maxConcurrent: 2 }));
-  srv = spawn("node", [path.join(HERE, "../server.mjs")], { env: { ...process.env, PORT, DASH_CONFIG: path.join(tmp, "config.json"), DASH_DATA: path.join(tmp, "data"), DASH_STATE: path.join(tmp, "state.json"), DASH_CLAUDE_BIN: path.join(HERE, "fake-claude.mjs"), DASH_TERM_LOG: log, DASH_TICK_MS: "300" }, stdio: "inherit" });
+  srv = spawn("node", [path.join(HERE, "../server.mjs")], { env: { ...process.env, DASH_UPDATE_CHECK: "0", PORT, DASH_CONFIG: path.join(tmp, "config.json"), DASH_DATA: path.join(tmp, "data"), DASH_STATE: path.join(tmp, "state.json"), DASH_CLAUDE_BIN: path.join(HERE, "fake-claude.mjs"), DASH_TERM_LOG: log, DASH_TICK_MS: "300" }, stdio: "inherit" });
   await until(async () => (await fetch(base() + "/api/recap").then((r) => r.json()).catch(() => null))?.index?.state === "idle");
 });
 after(async () => { srv.kill("SIGTERM"); await rm(tmp, { recursive: true, force: true }).catch(() => {}); });

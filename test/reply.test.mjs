@@ -24,7 +24,7 @@ before(async () => {
   const stat = (await import("node:fs")).readFileSync(`/proc/${process.pid}/stat`, "utf8"); const procStart = stat.slice(stat.lastIndexOf(")") + 2).split(" ")[19];
   await writeFile(path.join(prof, "sessions", `${process.pid}.json`), JSON.stringify({ sessionId: LIVE, pid: process.pid, procStart, status: "waiting", startedAt: Date.now() }));
   await writeFile(path.join(tmp, "config.json"), JSON.stringify({ port: PORT, profiles: [{ name: "p", dir: prof }], githubOwners: [], inputFiles: [], refreshSeconds: 600, githubRefreshSeconds: 600, notify: false, toolPresets: [{ label: "Web", tools: ["WebSearch"] }] }));
-  srv = spawn("node", [path.join(HERE, "../server.mjs")], { env: { ...process.env, PORT, DASH_CONFIG: path.join(tmp, "config.json"), DASH_DATA: path.join(tmp, "data"), DASH_STATE: path.join(tmp, "state.json"), DASH_EVENTS: path.join(tmp, "e.jsonl"), DASH_CLAUDE_BIN: path.join(HERE, "fake-claude.mjs") }, stdio: "ignore" });
+  srv = spawn("node", [path.join(HERE, "../server.mjs")], { env: { ...process.env, DASH_UPDATE_CHECK: "0", PORT, DASH_CONFIG: path.join(tmp, "config.json"), DASH_DATA: path.join(tmp, "data"), DASH_STATE: path.join(tmp, "state.json"), DASH_EVENTS: path.join(tmp, "e.jsonl"), DASH_CLAUDE_BIN: path.join(HERE, "fake-claude.mjs") }, stdio: "ignore" });
   await until(() => fetch(base + "/api/overview").then((r) => r.ok).catch(() => false));
   await until(async () => (await (await fetch(base + "/api/recap")).json()).index?.sessions >= 3);
 });

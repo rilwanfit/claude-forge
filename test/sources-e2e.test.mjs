@@ -16,7 +16,7 @@ before(async () => {
   const script = path.join(tmp, "tracker.mjs");
   await writeFile(script, `console.log(JSON.stringify([{id:"T-1",title:"Renew the certificate",url:"https://tracker.test/T-1",line:"Due Friday",ts:Date.now()},{id:"T-2",title:"Evil link",url:"javascript:alert(1)"}]))`);
   await writeFile(path.join(tmp, "config.json"), JSON.stringify({ port: PORT, profiles: [], githubOwners: [], inputFiles: [], refreshSeconds: 600, githubRefreshSeconds: 600, notify: false, sources: [{ type: "command", label: "Tracker", command: ["node", script] }, { type: "linear", label: "Linear" }] }));
-  srv = spawn("node", [path.join(HERE, "../server.mjs")], { env: { ...process.env, LINEAR_API_KEY: "", PORT, DASH_CONFIG: path.join(tmp, "config.json"), DASH_DATA: path.join(tmp, "data"), DASH_STATE: path.join(tmp, "state.json"), DASH_EVENTS: path.join(tmp, "e.jsonl") }, stdio: "ignore" });
+  srv = spawn("node", [path.join(HERE, "../server.mjs")], { env: { ...process.env, DASH_UPDATE_CHECK: "0", LINEAR_API_KEY: "", PORT, DASH_CONFIG: path.join(tmp, "config.json"), DASH_DATA: path.join(tmp, "data"), DASH_STATE: path.join(tmp, "state.json"), DASH_EVENTS: path.join(tmp, "e.jsonl") }, stdio: "ignore" });
   await until(() => fetch(base + "/api/overview").then((r) => r.ok).catch(() => false));
 });
 after(() => srv.kill("SIGTERM"));
