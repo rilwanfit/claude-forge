@@ -62,6 +62,14 @@ Replace `com.apple.Terminal` with the bundle id of your terminal app. A click th
 
 Claude Forge uses `notify-send`. Install it with your package manager (`libnotify-bin` on Debian and Ubuntu, `libnotify` on Fedora and Arch). `./install-service.sh` offers this. On WSL there is no desktop to notify.
 
+### How do I connect my phone?
+
+1. Start the server so your network can reach it: `DASH_HOST=0.0.0.0 DASH_TOKEN=$(openssl rand -hex 24) node server.mjs`. For a service, set `host` and `token` in `config.json` instead.
+2. In the page, open **Notifications** and press **Show QR code**.
+3. Scan the code with the phone camera. The phone must be on the same Wi-Fi.
+
+The code works once, for 2 minutes. Bluetooth and NFC are not supported.
+
 ### How do I turn notifications off?
 
 Set `"desktop": false` inside `"notify"` in `config.json` for the desktop popup, or `"notify": false` for everything. See the Notifications section of the README.

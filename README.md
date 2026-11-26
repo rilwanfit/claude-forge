@@ -125,6 +125,10 @@ DASH_HOST=0.0.0.0 DASH_TOKEN=$(openssl rand -hex 24) node server.mjs
 
 (or `"host"` and `"token"` in `config.json`). It refuses to start on a non-local host without a token of 16+ characters. Open `http://<machine-ip>:4777/?token=<token>` once; the browser keeps a cookie. There is no TLS: use it only on a network you trust, or put it behind a VPN or an HTTPS reverse proxy (for example Tailscale or Caddy). Anyone with the token can read your session snippets and start Claude runs on this machine.
 
+### Pair a phone with a QR code
+
+With the server network-visible (the command above), open **Notifications**, press **Show QR code** and scan it with the phone camera on the same Wi-Fi. The code is a one-time link that works for two minutes. It does not contain your token. There is no encryption, so use it only on a network you trust.
+
 ## Privacy
 
 Unless you set a host (above), it listens on 127.0.0.1 only and refuses requests for any other host name, so other sites in your browser cannot read it. Nothing is sent anywhere except `gh` calls to your own repositories and the daily update check (see Updating). It reads transcripts but never writes to them, and it never reads `~/.claude-secrets` or `.env` files. Snippets of your sessions show on the page, so only expose it with a token on a network you trust.
