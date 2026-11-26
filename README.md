@@ -127,9 +127,7 @@ DASH_HOST=0.0.0.0 DASH_TOKEN=$(openssl rand -hex 24) node server.mjs
 
 ### Pair a phone with a QR code
 
-Once the server is network-visible (the command above), you do not need to type the token on the phone. Open **Notifications** in the page, press **Show QR code** under "A nearby phone", and scan it with the phone camera. The phone must be on the same Wi-Fi.
-
-The code holds a one-time link, not your access token. The link works once and for two minutes (`/pair?code=...`), then the phone keeps the same login cookie as `/?token=...`. If the server is not network-visible, the panel shows how to turn that on. There is no encryption, and whoever scans a code gets full access, so use it only on a network you trust and do not show the code on a shared screen. Bluetooth and NFC are not supported; the code is the supported way to connect a nearby device.
+With the server network-visible (the command above), open **Notifications**, press **Show QR code** and scan it with the phone camera on the same Wi-Fi. The code is a one-time link that works for two minutes. It does not contain your token. There is no encryption, so use it only on a network you trust.
 
 ## Privacy
 
