@@ -1,5 +1,6 @@
 // Dashboard UI: sidebar, overview, schedule strip, workflow library and a detail panel. No build step.
 import { renderMarkdown } from "/mdview.mjs";
+import { toast } from "/toast.mjs";
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const clip = (s, n) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s);
@@ -16,8 +17,6 @@ async function api(path, body) {
   if (!r.ok) throw Object.assign(new Error(j.error || `Request failed (${r.status})`), { status: r.status, body: j });
   return j;
 }
-let toastTimer;
-function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2600); }
 const rid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
 
 // ---------------------------------------------------------------- formatting
@@ -411,7 +410,7 @@ function sessionPanel(it) {
 const allItems = () => [...D.needs, ...D.older, ...D.running, ...D.results];
 async function act(el) {
   const a = el.dataset.act, id = el.dataset.id;
-  const guard = async (fn) => { if (el.disabled) return; el.disabled = true; try { await fn(); } catch (e) { toast(e.message); if (e.body?.runId) { /* already running */ } } finally { el.disabled = false; } };
+  const guard = async (fn) => { if (el.disabled) return; el.disabled = true; try { await fn(); } catch (e) { toast(e.message, { error: true }); if (e.body?.runId) { /* already running */ } } finally { el.disabled = false; } };
   switch (a) {
     case "project": sel = id; localStorage.setItem("project", sel); render(); window.scrollTo(0, 0); break;
     case "close": closePanel(); break;
