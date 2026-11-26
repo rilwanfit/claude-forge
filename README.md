@@ -83,6 +83,8 @@ Sessions and git are re-read every minute (only the new part of each transcript)
 
 **Copy resume command** gives `cd <folder> && CLAUDE_CONFIG_DIR=<profile> claude --resume <session>` to continue that session in a terminal.
 
+Questions about updating, notifications, settings or Windows? See the [FAQ](FAQ.md).
+
 ## Setup
 
 `config.json`, `state.json` and `data/` are git-ignored: they hold your own paths and session text, so never commit them. Without a `config.json` the defaults apply; copy `config.example.json` to change them.
