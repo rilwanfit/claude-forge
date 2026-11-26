@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.claude-forge</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>@NODE@</string>
+    <string>@DIR@/server.mjs</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>@DIR@</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <!-- Add the folder that holds `claude` and `gh` if it is not here. -->
+    <key>PATH</key>
+    <string>@HOME@/.local/bin:@NODEDIR@:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <!-- Runs are detached from this service so they outlive a restart of it (like KillMode=process on Linux). -->
+  <key>AbandonProcessGroup</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>@HOME@/Library/Logs/claude-forge.log</string>
+  <key>StandardErrorPath</key>
+  <string>@HOME@/Library/Logs/claude-forge.log</string>
+</dict>
+</plist>

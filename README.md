@@ -99,7 +99,9 @@ To start it with your login and keep it running:
 ./install-service.sh
 ```
 
-Stop it with `systemctl --user disable --now claude-forge`.
+The script detects your OS: macOS gets a launchd agent (log: `~/Library/Logs/claude-forge.log`), Linux gets a systemd user service. Native Windows is not supported (runs are started through `sh`); use WSL with systemd enabled and run the script inside it.
+
+Stop it with `launchctl bootout gui/$(id -u)/com.claude-forge` (macOS) or `systemctl --user disable --now claude-forge` (Linux).
 
 ## Reaching it from other devices
 
