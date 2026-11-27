@@ -31,3 +31,9 @@ body:
       label: Logs
       description: Remove tokens, personal paths and session text before you paste.
       render: shell
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `claude doctor` (only for failed runs or replies)
+      description: Remove personal paths and names before you paste.
+      render: shell

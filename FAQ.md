@@ -121,6 +121,17 @@ gh auth login
 
 ## Running it
 
+### Runs or replies fail. What should I check first?
+
+Claude Forge starts runs and replies with the `claude` command, so check that first:
+
+```sh
+claude --version
+claude doctor
+```
+
+`claude doctor` checks your Claude Code install, auto-updates, sign-in and connection to the API. It does not use your plan. If it reports a problem, fix that first; for example, update Claude Code if an update failed. Its report contains paths from your machine, so remove them before you paste it into a bug report.
+
 ### How do I stop or restart the service?
 
 | OS | Stop | Restart |
