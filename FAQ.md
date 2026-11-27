@@ -121,6 +121,15 @@ gh auth login
 
 ## Running it
 
+### "No terminal found" when I press Resume
+
+Resume opens the session in a terminal window.
+
+- **macOS:** Claude Forge opens Terminal.app. The first time, macOS asks whether to allow it to control Terminal. Press **OK**. If you pressed **Don't Allow**, turn it on in **System Settings > Privacy & Security > Automation**. To use another terminal, set `"terminal"` in `config.json` to its command followed by the option that runs a command, as in the Linux example below. Claude Forge adds the command to the end.
+- **Linux:** it tries `gnome-terminal`, `konsole`, `xfce4-terminal`, `kitty`, `alacritty`, `xterm` and a few more. If you use another one, set `"terminal"` in `config.json`, for example `["xterm", "-e"]`. The command is added to the end.
+
+Update with `./update.sh` if you see this message on a Mac: older versions looked only for Linux terminals.
+
 ### How do I stop or restart the service?
 
 | OS | Stop | Restart |

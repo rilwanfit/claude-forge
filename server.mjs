@@ -23,6 +23,7 @@ import { fetchSource } from "./lib/sources.mjs";
 import { fetchPeer } from "./lib/peers.mjs";
 import { Replies, BASE_TOOLS as REPLY_BASE } from "./lib/reply.mjs";
 import { Notifier, makeDeliver, DEFAULT_EVENTS } from "./lib/notify.mjs";
+import { macCommand, osascriptArgs } from "./lib/terminal.mjs";
 import { checkForUpdate, makeGet, API as UPDATE_API } from "./lib/update.mjs";
 
 const run = promisify(execFile);
@@ -649,8 +650,13 @@ const TERMINALS = [
 const onPath = (bin) => (process.env.PATH || "").split(":").some((d) => existsSync(path.join(d, bin)));
 function launchTerminal(cwd, script, args, title) {
   const custom = config.terminal; // optional: ["my-term", "-e"]; the command is appended
+  if (!custom && process.platform === "darwin") { // no Linux terminal on a Mac: use Terminal.app. The first time, macOS asks to allow it (System Settings > Privacy & Security > Automation).
+    const child = spawn(process.env.DASH_OSASCRIPT || "osascript", osascriptArgs(macCommand(cwd, script, args)), { cwd, detached: true, stdio: ["ignore", "ignore", "inherit"] }); // errors go to the service log
+    child.on("error", () => {}); child.unref();
+    return "Terminal";
+  }
   const t = custom ? [custom[0], () => custom.slice(1)] : TERMINALS.find(([b]) => onPath(b));
-  if (!t) throw new HttpError(500, 'No terminal found. Set "terminal" in config.json, for example ["xterm", "-e"].');
+  if (!t) throw new HttpError(500, 'No terminal found. Set "terminal" in config.json, for example ["xterm", "-e"] (Linux) or see the FAQ.');
   const env = { ...process.env, XDG_RUNTIME_DIR: process.env.XDG_RUNTIME_DIR || `/run/user/${process.getuid()}` };
   const child = spawn(t[0], [...t[1](cwd), "sh", "-c", script, "sh", cwd, ...args], { cwd, env, detached: true, stdio: "ignore" });
   child.on("error", () => {}); child.unref();
